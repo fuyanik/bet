@@ -11,7 +11,7 @@ const LoadingScreen = () => {
     >
       {/* Main logo container with massive yellow shadow */}
       <div 
-        className='relative z-10 flex flex-col items-center justify-center w-70 h-70 bg-[#224d094e] rounded-full border-8 border-[#eecd48]'
+        className='relative z-10 flex flex-col items-center justify-center md:w-70 md:h-70 w-55 h-55 bg-[#224d094e] rounded-full border-8 border-[#eecd48]'
         style={{
           animation: 'pulse-shadow 2s ease-in-out infinite',
         }}
@@ -35,7 +35,7 @@ const LoadingScreen = () => {
         ></div>
         
         {/* Logo */}
-        <Image src={logo} alt='logo' width={200} height={200} className='relative z-10' />
+        <Image src={logo} alt='logo'  className=' w-[120px] md:w-[200px]  h-auto relative z-10' />
       </div>
     </div>
   )

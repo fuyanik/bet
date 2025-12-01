@@ -52,8 +52,12 @@
 }
 
 body {
-  background-color: white;
+  background-color: #294c0b;
   font-family: Arial, Helvetica, sans-serif;
+  padding-top: env(safe-area-inset-top);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
 /* Loading Screen Animations */
@@ -97,4 +101,20 @@ body {
 
 .animate-spin-reverse {
   animation: spin 1.5s linear infinite reverse;
+}
+
+/* Wave Loading Animation */
+@keyframes wave {
+  0% {
+    transform: scaleX(1);
+  }
+  25% {
+    transform: scaleX(2.8);
+  }
+  50% {
+    transform: scaleX(1);
+  }
+  100% {
+    transform: scaleX(1);
+  }
 }

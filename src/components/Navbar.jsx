@@ -18,6 +18,9 @@ const Navbar = ({ onLoginClick, isLoggedIn, userData, setIsLoggedIn, setUserData
   const profileMenuRef = useRef(null)
   const profileIconRef = useRef(null)
 
+  // Mobile Detection
+  const [isMobile, setIsMobile] = useState(false)
+
   // Login Modal States
   const [showLoginModal, setShowLoginModal] = useState(false)
   const [username, setUsername] = useState('')
@@ -35,6 +38,18 @@ const Navbar = ({ onLoginClick, isLoggedIn, userData, setIsLoggedIn, setUserData
   const [isDragging, setIsDragging] = useState(false)
   const sliderContainerRef = useRef(null)
   const startXRef = useRef(0)
+
+  // Mobile detection
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768)
+    }
+    
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
 
   // Dışarı tıklandığında menüyü kapat
   useEffect(() => {
@@ -71,15 +86,34 @@ const Navbar = ({ onLoginClick, isLoggedIn, userData, setIsLoggedIn, setUserData
     }
   }, [isLoading])
 
-  // Generate random target position for puzzle
+  // Prevent body scroll when login modal is shown
   useEffect(() => {
-    if (showCaptcha) {
-      setTargetPosition(250)
+    if (showLoginModal) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = 'unset'
+    }
+    
+    return () => {
+      document.body.style.overflow = 'unset'
+    }
+  }, [showLoginModal])
+
+  // Generate dynamic target position for puzzle based on container width
+  useEffect(() => {
+    if (showCaptcha && sliderContainerRef.current) {
+      const containerWidth = sliderContainerRef.current.offsetWidth
+      // Target is at 75-80% of the container width (responsive)
+      const dynamicTarget = isMobile 
+        ? containerWidth * 0.72  // Mobile: slightly less for better fit
+        : containerWidth * 0.75   // Desktop: 75%
+      
+      setTargetPosition(dynamicTarget)
       setSliderPosition(0)
       setCaptchaCompleted(false)
       setIsDragging(false)
     }
-  }, [showCaptcha])
+  }, [showCaptcha, isMobile])
 
   // Mouse handlers
   const handleSliderMouseDown = (e) => {
@@ -101,10 +135,13 @@ const Navbar = ({ onLoginClick, isLoggedIn, userData, setIsLoggedIn, setUserData
         const maxPosition = rect.width - 60
         let newPosition = e.clientX - rect.left - 30
         
+        // Dynamic tolerance based on container width
+        const tolerance = isMobile ? rect.width * 0.08 : rect.width * 0.05
+        
         newPosition = Math.max(0, Math.min(newPosition, maxPosition))
         setSliderPosition(newPosition)
         
-        if (Math.abs(newPosition - targetPosition) < 20) {
+        if (Math.abs(newPosition - targetPosition) < tolerance) {
           setCaptchaCompleted(true)
         }
       }
@@ -114,8 +151,12 @@ const Navbar = ({ onLoginClick, isLoggedIn, userData, setIsLoggedIn, setUserData
       if (isDragging) {
         setIsDragging(false)
         
+        const tolerance = sliderContainerRef.current 
+          ? (isMobile ? sliderContainerRef.current.offsetWidth * 0.08 : sliderContainerRef.current.offsetWidth * 0.05)
+          : 20
+        
         setSliderPosition(current => {
-          if (Math.abs(current - targetPosition) < 20) {
+          if (Math.abs(current - targetPosition) < tolerance) {
             setCaptchaCompleted(true)
           } else {
             setCaptchaCompleted(false)
@@ -133,10 +174,13 @@ const Navbar = ({ onLoginClick, isLoggedIn, userData, setIsLoggedIn, setUserData
         const maxPosition = rect.width - 60
         let newPosition = touch.clientX - rect.left - 30
         
+        // Dynamic tolerance based on container width (more generous on mobile)
+        const tolerance = isMobile ? rect.width * 0.08 : rect.width * 0.05
+        
         newPosition = Math.max(0, Math.min(newPosition, maxPosition))
         setSliderPosition(newPosition)
         
-        if (Math.abs(newPosition - targetPosition) < 20) {
+        if (Math.abs(newPosition - targetPosition) < tolerance) {
           setCaptchaCompleted(true)
         }
       }
@@ -146,8 +190,12 @@ const Navbar = ({ onLoginClick, isLoggedIn, userData, setIsLoggedIn, setUserData
       if (isDragging) {
         setIsDragging(false)
         
+        const tolerance = sliderContainerRef.current 
+          ? (isMobile ? sliderContainerRef.current.offsetWidth * 0.08 : sliderContainerRef.current.offsetWidth * 0.05)
+          : 20
+        
         setSliderPosition(current => {
-          if (Math.abs(current - targetPosition) < 15) {
+          if (Math.abs(current - targetPosition) < tolerance) {
             setCaptchaCompleted(true)
           } else {
             setCaptchaCompleted(false)
@@ -171,7 +219,7 @@ const Navbar = ({ onLoginClick, isLoggedIn, userData, setIsLoggedIn, setUserData
         window.removeEventListener('touchend', handleTouchEnd)
       }
     }
-  }, [isDragging, targetPosition])
+  }, [isDragging, targetPosition, isMobile])
 
   const handleCompleteCaptcha = () => {
     setShowCaptcha(false)
@@ -183,7 +231,7 @@ const Navbar = ({ onLoginClick, isLoggedIn, userData, setIsLoggedIn, setUserData
         setIsLoggedIn(true)
         setUserData({
           username: username || 'Kullanıcı',
-          balance: 22.45,
+          balance: 22.25,
           currency: '₺'
         })
         setShowLoginModal(false)
@@ -229,11 +277,7 @@ const Navbar = ({ onLoginClick, isLoggedIn, userData, setIsLoggedIn, setUserData
   }
 
   const handleBalanceClick = () => {
-    setIsLoading(true)
-    setTimeout(() => {
-      setIsLoading(false)
-      router.push('/payment')
-    }, 2000)
+    router.push('/payment')
   }
 
   const androidIcon = () => {
@@ -244,7 +288,7 @@ const Navbar = ({ onLoginClick, isLoggedIn, userData, setIsLoggedIn, setUserData
   viewBox="0 0 38 38"
   fill="none"
   xmlns="http://www.w3.org/2000/svg"
-  className="w-[38px] h-[38px] relative cursor-pointer group"
+  className="w-[27px] h-[27px] md:w-[38px] md:h-[38px] relative cursor-pointer group"
   preserveAspectRatio="none"
 >
   <rect x="1.5" y="1.5" width={35} height={35} rx="6.5" stroke="#F9C408" strokeWidth={3} />
@@ -269,8 +313,6 @@ const Navbar = ({ onLoginClick, isLoggedIn, userData, setIsLoggedIn, setUserData
     )
   }
 
-
-
   const iosIcon = () => {
     return (
       <svg
@@ -279,7 +321,7 @@ const Navbar = ({ onLoginClick, isLoggedIn, userData, setIsLoggedIn, setUserData
       viewBox="0 0 38 38"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      className="w-[38px] h-[38px] relative cursor-pointer group"
+      className="w-[27px] h-[27px] md:w-[38px] md:h-[38px] relative cursor-pointer group"
       preserveAspectRatio="none"
     >
       <rect x="1.5" y="1.5" width={35} height={35} rx="6.5" stroke="#F9C408" strokeWidth={3} />
@@ -300,7 +342,7 @@ const Navbar = ({ onLoginClick, isLoggedIn, userData, setIsLoggedIn, setUserData
   viewBox="0 0 56 34"
   fill="none"
   xmlns="http://www.w3.org/2000/svg"
-  className="w-14 h-[34px] relative cursor-pointer"
+  className="w-14 h-[34px]  hidden md:block relative cursor-pointer"
   preserveAspectRatio="none"
 >
   <rect width={56} height={34} rx={8} fill="white" fillOpacity="0.1" />
@@ -362,10 +404,10 @@ const Navbar = ({ onLoginClick, isLoggedIn, userData, setIsLoggedIn, setUserData
       viewBox="0 0 38 38"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      className="w-[38px] h-[38px] relative cursor-pointer group"
+      className=" md:w-[38px] md:h-[38px] w-[28px] h-[28px] relative cursor-pointer group"
       preserveAspectRatio="none"
     >
-      <rect x={1} y={1} width={36} height={36} rx={7}  stroke="#F9C408" strokeWidth={2} />
+      <rect x={1} y={1} width={36} height={36} rx={7}  stroke="#F9C408" strokeWidth={3} />
       <path
         d="M15.57 21.098C14.5057 20.5268 13.612 19.6835 12.9799 18.6542C12.3478 17.6249 11.9999 16.4464 11.9719 15.2388C11.9438 14.0313 12.2364 12.8379 12.82 11.7803C13.4036 10.7227 14.2571 9.83882 15.2937 9.21873C16.3303 8.59864 17.5128 8.26454 18.7206 8.25049C19.9284 8.23645 21.1183 8.54296 22.169 9.13878C23.2198 9.73459 24.0937 10.5984 24.7017 11.6421C25.3097 12.6858 25.63 13.8721 25.63 15.08C25.6299 16.2896 25.3086 17.4775 24.699 18.5222C24.0893 19.5669 23.2131 20.4309 22.16 21.026C27.244 21.896 30.19 24.986 30.19 29.276H28.69C28.69 25.081 25.26 22.278 19.06 22.278C12.86 22.278 9.43201 25.081 9.43201 29.276H7.93201C7.93201 25.096 10.727 22.058 15.572 21.098H15.57ZM18.8 20.408C20.2136 20.408 21.5693 19.8465 22.5689 18.8469C23.5685 17.8473 24.13 16.4916 24.13 15.078C24.13 13.6644 23.5685 12.3087 22.5689 11.3091C21.5693 10.3096 20.2136 9.748 18.8 9.748C17.3864 9.748 16.0307 10.3096 15.0311 11.3091C14.0316 12.3087 13.47 13.6644 13.47 15.078C13.47 16.4916 14.0316 17.8473 15.0311 18.8469C16.0307 19.8465 17.3864 20.408 18.8 20.408Z"
         fill="#F9C408"
@@ -1237,142 +1279,284 @@ const Navbar = ({ onLoginClick, isLoggedIn, userData, setIsLoggedIn, setUserData
       )}
 
       {/* --- LOGIN MODAL --- */}
-      <div 
-        className={`fixed inset-0 z-[100] flex items-center justify-center transition-opacity duration-400 ${
-          showLoginModal 
-            ? 'opacity-100 pointer-events-auto' 
-            : 'opacity-0 pointer-events-none'
-        }`}
-        onClick={(e) => {
-          if (e.target === e.currentTarget && showLoginModal) {
-            setShowLoginModal(false)
-          }
-        }}
-      >
+      {isMobile ? (
+        // MOBILE VERSION
         <div 
-          className={`bg-gray-600/40 transition-opacity duration-400 absolute inset-0 ${
-            showLoginModal ? 'opacity-100' : 'opacity-0'
-          }`}
-        />
-        <div 
-          className={`bg-white shadow-2xl w-[364px] h-auto flex flex-col relative overflow-hidden transition-all duration-400 ${
+          className={`fixed inset-0 z-[100] flex items-center justify-center transition-opacity duration-400 ${
             showLoginModal 
-              ? 'opacity-100 translate-y-0' 
-              : 'opacity-0 -translate-y-8'
+              ? 'opacity-100 pointer-events-auto' 
+              : 'opacity-0 pointer-events-none'
           }`}
-          onClick={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            if (e.target === e.currentTarget && showLoginModal) {
+              setShowLoginModal(false)
+            }
+          }}
         >
-          {/* Main Card Container */}
-          <div className="w-full max-w-md bg-white shadow-xl overflow-hidden relative">
-            {/* Header Section */}
-            <div className="bg-[#294c0b] px-6 py-6 text-center relative">
-              {/* Close Button */}
-              <button 
-                onClick={() => setShowLoginModal(false)}
-                disabled={isLoggingIn}
-                className="absolute cursor-pointer top-4 right-4 bg-black/20 hover:bg-black/30 text-white rounded-full px-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                x
-              </button>
-
-              <h1 className="text-white text-2xl font-bold mb-1">Hoşgeldiniz</h1>
-              <p className="text-sm text-gray-300">
-                Henüz hesabınız yok mu? <span className="text-[#f4d03f] cursor-pointer hover:underline">Şimdi Kayıt Olun</span>
-              </p>
-            </div>
-
-            {/* Body Section */}
-            <div className="p-6 pt-8">
-              {/* Username/Email Input */}
-              <div className="mb-6">
-                <label className="block text-gray-800 text-sm mb-2 font-medium">
-                  <span className="text-red-600 mr-0.5">*</span>Kullanıcı adınız veya Email Adresiniz
-                </label>
-                <input 
-                  type="text" 
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  placeholder="Lütfen Kullanıcı Adınızı veya Email Adresinizi girin"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-[4px] text-gray-700 text-sm focus:outline-none focus:border-[#f4d03f] transition-colors placeholder-gray-400"
+          <div 
+            className={`bg-[#202123]/70 backdrop-blur-sm transition-opacity duration-400 absolute inset-0 ${
+              showLoginModal ? 'opacity-100' : 'opacity-0'
+            }`}
+          />
+          <div 
+            className={`bg-transparent shadow-2xl fixed inset-0 flex flex-col overflow-y-auto transition-all duration-400 ${
+              showLoginModal 
+                ? 'opacity-100 translate-y-0' 
+                : 'opacity-0 -translate-y-8'
+            }`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Main Card Container */}
+            <div className="w-full max-w-md bg-transparent overflow-hidden relative mx-auto min-h-full flex flex-col">
+              {/* Header Section */}
+              <div className="bg-transparent px-6 pt-[14px] text-center relative flex-shrink-0">
+                {/* Close Button */}
+                <button 
+                  onClick={() => setShowLoginModal(false)}
                   disabled={isLoggingIn}
-                />
+                  className="absolute cursor-pointer  top-4 right-4 bg-black/20 hover:bg-black/30 text-white rounded-full px-3 py-1 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  x
+                </button>
+
+                <h1 className="text-white text-2xl font-bold mb-1">Hoşgeldiniz</h1>
               </div>
 
-              {/* Password Input */}
-              <div className="mb-8">
-                <label className="block text-gray-800 text-sm mb-2 font-medium">
-                  <span className="text-red-600 mr-0.5">*</span>Şifre
-                </label>
-                <div className="relative">
+              {/* Body Section */}
+              <div className="px-8 pt-8 pb-6 flex-1 overflow-y-auto">
+                {/* Username/Email Input */}
+                <div className="mb-6">
+                  <label className="block text-white text-sm mb-2 font-medium">
+                    <span className="text-red-600 mr-0.5">*</span>Kullanıcı adınız veya Email Adresiniz
+                  </label>
                   <input 
-                    type={showPassword ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Lütfen şifrenizi girin."
-                    className="w-full px-4 py-3 border border-gray-300 rounded-[4px] text-gray-700 text-sm focus:outline-none focus:border-[#f4d03f] transition-colors placeholder-gray-400 pr-10"
+                    type="text" 
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder="Lütfen Kullanıcı Adınızı veya Email Adresinizi girin"
+                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-[4px] text-gray-700 text-base focus:outline-none focus:border-[#f4d03f] transition-colors placeholder-gray-400"
                     disabled={isLoggingIn}
                   />
-                  <button 
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-600 hover:text-gray-800 focus:outline-none"
-                  >
-                    <Eye size={20} />
-                  </button>
                 </div>
-              </div>
 
-              {/* Info Text */}
-              <div className="mb-6 text-sm text-gray-800 leading-relaxed">
-                <p>
-                  Güncel adresimiz <span className="font-bold">www.jojobet1098.com</span>'dur. Bir sonraki güncellemede adresimiz <span className="font-bold">www.jojobet1099.com</span> olacaktır. Her zaman güncel adres için: <a href="#" className="text-[#eecf54] hover:underline">https://dub.run/jojoguncel</a> yazıp giriş yapabilirsiniz!
-                </p>
-              </div>
+                {/* Password Input */}
+                <div className="mb-8">
+                  <label className="block text-white text-sm mb-2 font-medium">
+                    <span className="text-red-600 mr-0.5">*</span>Şifre
+                  </label>
+                  <div className="relative">
+                    <input 
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Lütfen şifrenizi girin."
+                      className="w-full px-4 py-3 bg-white border border-gray-300 rounded-[4px] text-gray-700 text-base focus:outline-none focus:border-[#f4d03f] transition-colors placeholder-gray-400 pr-10"
+                      disabled={isLoggingIn}
+                    />
+                    <button 
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-600 hover:text-gray-800 focus:outline-none"
+                    >
+                      <Eye size={20} />
+                    </button>
+                  </div>
+                </div>
 
-              {/* Social Icons */}
-              <div className="flex gap-3 mb-8">
-                {/* X (Twitter) Icon */}
-                <a href="#" className="w-10 h-10 bg-black rounded-full flex items-center justify-center text-white hover:opacity-80 transition-opacity">
-                  <svg viewBox="0 0 24 24" aria-hidden="true" className="w-5 h-5 fill-current"><g><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"></path></g></svg>
-                </a>
-                
-                {/* Telegram Icon */}
-                <a href="#" className="w-10 h-10 bg-[#37aee2] rounded-full flex items-center justify-center text-white hover:opacity-80 transition-opacity pl-0.5 pt-0.5">
-                  <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current" xmlns="http://www.w3.org/2000/svg"><path d="M21.929 2.613a1.996 1.996 0 0 0-1.944.12L2.56 11.533a1.995 1.995 0 0 0 .11 3.652l4.496 1.445 1.53 4.956a1.996 1.996 0 0 0 3.479.51L14.5 19.27l4.89 3.644a2.005 2.005 0 0 0 3.232-1.243l3.375-17.5a2 2 0 0 0-2.068-2.558ZM12.014 13.4l-1.148 4.785-.65-3.85L20.33 5.45 12.014 13.4Z"></path></svg>
-                </a>
-              </div>
+                {/* Info Text */}
+                <div className="mb-6 text-sm text-white leading-relaxed">
+                  <p>
+                    Güncel adresimiz <span className="font-bold">www.jojobet1098.com</span>'dur. Bir sonraki güncellemede adresimiz <span className="font-bold">www.jojobet1099.com</span> olacaktır. Her zaman güncel adres için: <a href="#" className="text-[#eecf54] hover:underline">https://dub.run/jojoguncel</a> yazıp giriş yapabilirsiniz!
+                  </p>
+                </div>
 
-              {/* Buttons */}
-              <div className="space-y-4">
-                <button 
-                  onClick={handleLogin}
-                  disabled={isLoggingIn || isLoadingCaptcha}
-                  className="w-full bg-[#f4c91c] hover:bg-[#e4c448] cursor-pointer disabled:bg-gray-400 disabled:cursor-not-allowed text-gray-900 font-medium py-3.5 rounded-[4px] transition-colors shadow-sm text-base flex items-center justify-center gap-2"
-                >
-                  {isLoadingCaptcha ? (
-                    <>
-                      <svg className="animate-spin h-5 w-5 text-gray-900" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      Yükleniyor...
-                    </>
-                  ) : (
-                    'Giriş Yap' 
-                  )}
-                </button>
-                
-                <div className="text-center">
-                  <button className="text-[#eecf54] text-sm hover:underline font-medium">
-                    Şifremi Unuttum
+                {/* Social Icons */}
+                <div className="flex gap-3 mb-8 justify-start">
+                  {/* X (Twitter) Icon */}
+                  <a href="#" className="w-10 h-10 bg-black rounded-full flex items-center justify-center text-white hover:opacity-80 transition-opacity">
+                    <svg viewBox="0 0 24 24" aria-hidden="true" className="w-5 h-5 fill-current"><g><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"></path></g></svg>
+                  </a>
+                  
+                  {/* Telegram Icon */}
+                  <a href="#" className="w-10 h-10 bg-[#37aee2] rounded-full flex items-center justify-center text-white hover:opacity-80 transition-opacity pl-0.5 pt-0.5">
+                    <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current" xmlns="http://www.w3.org/2000/svg"><path d="M21.929 2.613a1.996 1.996 0 0 0-1.944.12L2.56 11.533a1.995 1.995 0 0 0 .11 3.652l4.496 1.445 1.53 4.956a1.996 1.996 0 0 0 3.479.51L14.5 19.27l4.89 3.644a2.005 2.005 0 0 0 3.232-1.243l3.375-17.5a2 2 0 0 0-2.068-2.558ZM12.014 13.4l-1.148 4.785-.65-3.85L20.33 5.45 12.014 13.4Z"></path></svg>
+                  </a>
+                </div>
+
+                {/* Buttons */}
+                <div className="space-y-4">
+                  <button 
+                    onClick={handleLogin}
+                    disabled={isLoggingIn || isLoadingCaptcha}
+                    className="w-full h-[42px] bg-[#f4c91c] hover:bg-[#e4c448] cursor-pointer disabled:cursor-not-allowed text-gray-900 font-medium rounded-[4px] transition-colors shadow-sm text-base flex items-center justify-center gap-4"
+                  >
+                    {isLoadingCaptcha ? (
+                      <div className="flex items-center gap-4 h-full">
+                        <div className="w-2 h-2 bg-[#1a1a1a] rounded-md animate-[wave_2s_ease-in-out_infinite]"></div>
+                        <div className="w-2 h-2 bg-[#1a1a1a] rounded-md animate-[wave_2s_ease-in-out_0.4s_infinite]"></div>
+                        <div className="w-2 h-2 bg-[#1a1a1a] rounded-md animate-[wave_2s_ease-in-out_0.8s_infinite]"></div>
+                        <div className="w-2 h-2 bg-[#1a1a1a] rounded-md animate-[wave_2s_ease-in-out_1.2s_infinite]"></div>
+                      </div>
+                    ) : (
+                      'Giriş Yap' 
+                    )}
                   </button>
+                  
+                  {/* Kayıt Ol Button - Mobile Only */}
+                  <button 
+                    className="w-full bg-transparent border text-sm border-[#ffffffb9]  text-[#ffffffb9] font-medium py-2.5 rounded-[6px] transition-colors hover:bg-white/10"
+                  >
+                    Şimdi Kayıt Olun
+                  </button>
+                  
+                  <div className="text-center">
+                    <button className="text-[#eecf54] text-sm hover:underline font-medium">
+                      Şifremi Unuttum
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      ) : (
+        // WEB VERSION
+        <div 
+          className={`fixed inset-0 z-[100] flex items-center justify-center transition-opacity duration-400 ${
+            showLoginModal 
+              ? 'opacity-100 pointer-events-auto' 
+              : 'opacity-0 pointer-events-none'
+          }`}
+          onClick={(e) => {
+            if (e.target === e.currentTarget && showLoginModal) {
+              setShowLoginModal(false)
+            }
+          }}
+        >
+          <div 
+            className={`bg-gray-600/40 transition-opacity duration-400 absolute inset-0 ${
+              showLoginModal ? 'opacity-100' : 'opacity-0'
+            }`}
+          />
+          <div 
+            className={`bg-white shadow-2xl w-[364px] h-auto flex flex-col relative overflow-hidden transition-all duration-400 ${
+              showLoginModal 
+                ? 'opacity-100 translate-y-0' 
+                : 'opacity-0 -translate-y-8'
+            }`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Main Card Container */}
+            <div className="w-full max-w-md bg-white shadow-xl overflow-hidden relative">
+              {/* Header Section */}
+              <div className="bg-[#294c0b] px-6 py-6 text-center relative">
+                {/* Close Button */}
+                <button 
+                  onClick={() => setShowLoginModal(false)}
+                  disabled={isLoggingIn}
+                  className="absolute cursor-pointer top-4 right-4 bg-black/20 hover:bg-black/30 text-white rounded-full px-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  x
+                </button>
 
-      {/* --- CAPTCHA PUZZLE MODAL --- */}
+                <h1 className="text-white text-2xl font-bold mb-1">Hoşgeldiniz</h1>
+                <p className="text-sm text-gray-300">
+                  Henüz hesabınız yok mu? <span className="text-[#f4d03f] cursor-pointer hover:underline">Şimdi Kayıt Olun</span>
+                </p>
+              </div>
+
+              {/* Body Section */}
+              <div className="p-6 pt-8">
+                {/* Username/Email Input */}
+                <div className="mb-6">
+                  <label className="block text-gray-800 text-sm mb-2 font-medium">
+                    <span className="text-red-600 mr-0.5">*</span>Kullanıcı adınız veya Email Adresiniz
+                  </label>
+                  <input 
+                    type="text" 
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder="Lütfen Kullanıcı Adınızı veya Email Adresinizi girin"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-[4px] text-gray-700 text-sm focus:outline-none focus:border-[#f4d03f] transition-colors placeholder-gray-400"
+                    disabled={isLoggingIn}
+                  />
+                </div>
+
+                {/* Password Input */}
+                <div className="mb-8">
+                  <label className="block text-gray-800 text-sm mb-2 font-medium">
+                    <span className="text-red-600 mr-0.5">*</span>Şifre
+                  </label>
+                  <div className="relative">
+                    <input 
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Lütfen şifrenizi girin."
+                      className="w-full px-4 py-3 border border-gray-300 rounded-[4px] text-gray-700 text-sm focus:outline-none focus:border-[#f4d03f] transition-colors placeholder-gray-400 pr-10"
+                      disabled={isLoggingIn}
+                    />
+                    <button 
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-600 hover:text-gray-800 focus:outline-none"
+                    >
+                      <Eye size={20} />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Info Text */}
+                <div className="mb-6 text-sm text-gray-800 leading-relaxed">
+                  <p>
+                    Güncel adresimiz <span className="font-bold">www.jojobet1098.com</span>'dur. Bir sonraki güncellemede adresimiz <span className="font-bold">www.jojobet1099.com</span> olacaktır. Her zaman güncel adres için: <a href="#" className="text-[#eecf54] hover:underline">https://dub.run/jojoguncel</a> yazıp giriş yapabilirsiniz!
+                  </p>
+                </div>
+
+                {/* Social Icons */}
+                <div className="flex gap-3 mb-8">
+                  {/* X (Twitter) Icon */}
+                  <a href="#" className="w-10 h-10 bg-black rounded-full flex items-center justify-center text-white hover:opacity-80 transition-opacity">
+                    <svg viewBox="0 0 24 24" aria-hidden="true" className="w-5 h-5 fill-current"><g><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"></path></g></svg>
+                  </a>
+                  
+                  {/* Telegram Icon */}
+                  <a href="#" className="w-10 h-10 bg-[#37aee2] rounded-full flex items-center justify-center text-white hover:opacity-80 transition-opacity pl-0.5 pt-0.5">
+                    <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current" xmlns="http://www.w3.org/2000/svg"><path d="M21.929 2.613a1.996 1.996 0 0 0-1.944.12L2.56 11.533a1.995 1.995 0 0 0 .11 3.652l4.496 1.445 1.53 4.956a1.996 1.996 0 0 0 3.479.51L14.5 19.27l4.89 3.644a2.005 2.005 0 0 0 3.232-1.243l3.375-17.5a2 2 0 0 0-2.068-2.558ZM12.014 13.4l-1.148 4.785-.65-3.85L20.33 5.45 12.014 13.4Z"></path></svg>
+                  </a>
+                </div>
+
+                {/* Buttons */}
+                <div className="space-y-4">
+                  <button 
+                    onClick={handleLogin}
+                    disabled={isLoggingIn || isLoadingCaptcha}
+                    className="w-full bg-[#f4c91c] hover:bg-[#e4c448] cursor-pointer disabled:bg-gray-400 disabled:cursor-not-allowed text-gray-900 font-medium py-3.5 rounded-[4px] transition-colors shadow-sm text-base flex items-center justify-center gap-2"
+                  >
+                    {isLoadingCaptcha ? (
+                      <>
+                        <svg className="animate-spin h-5 w-5 text-gray-900" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Yükleniyor...
+                      </>
+                    ) : (
+                      'Giriş Yap' 
+                    )}
+                  </button>
+                  
+                  <div className="text-center">
+                    <button className="text-[#eecf54] text-sm hover:underline font-medium">
+                      Şifremi Unuttum
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* --- CAPTCHA PUZZLE MODAL ] --- */}
       <div 
         className={`fixed inset-0 z-[101] flex items-center justify-center transition-opacity duration-400 ${
           showCaptcha 
@@ -1386,7 +1570,7 @@ const Navbar = ({ onLoginClick, isLoggedIn, userData, setIsLoggedIn, setUserData
           }`}
         />
         <div 
-          className={`bg-white shadow-2xl w-[400px] h-auto flex flex-col relative overflow-hidden transition-all duration-400 rounded-lg ${
+          className={`bg-white shadow-2xl md:w-[400px] w-[96vw] h-auto flex flex-col relative overflow-hidden transition-all duration-400 rounded-lg ${
             showCaptcha 
               ? 'opacity-100 translate-y-0' 
               : 'opacity-0 -translate-y-8'
@@ -1443,14 +1627,22 @@ const Navbar = ({ onLoginClick, isLoggedIn, userData, setIsLoggedIn, setUserData
         </div>
       </div>
 
-      <nav className='flex justify-between items-center px-3 w-full h-[106px] border-b-4 border-[#F9C408] bg-[#294c0b] '>
-
-         <Image onClick={() => router.push('/')} className='w-[190px] h-auto cursor-pointer' src={logo} alt="logo"  />
+      <nav className='flex justify-between items-center md:px-3 px-2  w-full md:h-[106px] h-[60px] border-b-4 border-[#F9C408] bg-[#294c0b] '>
+          {/* --- Logo --- */}
+        <div className='flex items-center justify-center gap-2 pl-4' > 
+            {/* --- Menu icon 3 line for mobile --- */}
+           <div className='flex flex-col md:hidden gap-1 '>
+            <div className='w-7 h-1 bg-[#F9C408] rounded-full'></div>
+            <div className='w-7 h-1 bg-[#F9C408] rounded-full'></div> 
+            <div className='w-7 h-1 bg-[#F9C408] rounded-full'></div> 
+           </div>
+           <Image onClick={() => router.push('/')} className=' md:w-[190px] w-[130px] h-auto cursor-pointer' src={logo} alt="logo"  /> 
+        </div>
           {/*  right side navbar */}
          <div className='max-w-[75%] w-full h-full  flex flex-col '>
               
                {/*  top side */} 
-               <div className=' flex gap-5 justify-end items-center w-full h-[62%] '>
+               <div className=' flex md:gap-5 gap-2 md:justify-end justify-end items-center w-full  md:h-[62%] h-full '>
                    {/*  mobile icons */} 
                    <div className='flex gap-2 items-center'>
                     {androidIcon()}
@@ -1458,14 +1650,14 @@ const Navbar = ({ onLoginClick, isLoggedIn, userData, setIsLoggedIn, setUserData
                    </div>
 
                    {/* Conditional rendering based on login status */}
-                   {isLoggedIn && userData ? (
+                   { isLoggedIn && userData ? (
                      <>
                       {/* Balance Display */}
                       <div 
-                        className='flex cursor-pointer items-center gap-4 bg-[#F9C408] px-3 py-2 rounded-md'
+                        className='flex cursor-pointer items-center md:gap-4 gap-1 bg-[#F9C408] md:px-3 px-2 md:py-2 py-[2px] rounded-md'
                         onClick={handleBalanceClick}
                       >
-                        <span className='text-[#294c0b] font-bold text-sm'>
+                        <span className='text-[#294c0b] font-bold text-xs'>
                           {userData.balance.toFixed(2)} {userData.currency} 
                         </span>
                         <span className='text-[#294c0b] font-bold text-md'>+</span>
@@ -1596,18 +1788,21 @@ const Navbar = ({ onLoginClick, isLoggedIn, userData, setIsLoggedIn, setUserData
                         )}
                       </div>
                      </>
-                   ) : (
-                     <>
-                       {/*  kayıt ol */} 
-                       <button className=' cursor-pointer text-sm font-bold bg-[#F9C408] hover:bg-[#f9f108f5] text-[#294c0b] px-2 py-2 rounded-md'>KAYIT OL</button>
+                  ) : (
+                    <>
+                      {/*  kayıt ol ve giriş butonları - mobilde yer değiştir */} 
+                      <div className='flex md:flex-row flex-row-reverse gap-2'>
+                        {/*  kayıt ol */} 
+                        <button className=' cursor-pointer md:text-sm text-xs font-bold bg-[#F9C408] hover:bg-[#f9f108f5] text-[#294c0b] px-2 py-2 rounded-md'>KAYIT OL</button>
 
-                       {/*  giriş*/} 
-                       <button onClick={handleLoginClick} className=' cursor-pointer text-[14px] font-bold  text-white  rounded-md'>GİRİŞ</button>
-                     </>
-                   )}
+                        {/*  giriş*/} 
+                        <button onClick={handleLoginClick} className=' cursor-pointer md:text-[14px] text-xs font-bold  text-white  rounded-md'>GİRİŞ</button>
+                      </div>
+                    </>
+                  )}
 
                    {/*  çizgi */} 
-                   <div className='w-[1px] h-[39px] bg-[#e1e2de36]'></div>
+                   <div className='w-[1px] hidden md:block h-[39px] bg-[#e1e2de36]'></div>
 
                    {/*  türk bayrağı*/} 
                    {turkFlag()}
@@ -1616,8 +1811,14 @@ const Navbar = ({ onLoginClick, isLoggedIn, userData, setIsLoggedIn, setUserData
                </div>
 
 
+
+
+
+
+
+
                {/*  bottom side */}
-               <div className='w-full font-product  justify-around text-white text-[15px]  flex  items-center gap-2 h-[38%] border-t border-[#e1e2de36]'>
+               <div className='w-full hidden md:flex font-product  justify-around text-white text-[15px]    items-center gap-2 h-[38%] border-t border-[#e1e2de36]'>
                  {menuItems.map((item, index) => (
                    <p key={index} className={`cursor-pointer border-b-4 transition-all duration-300 ${
                      item === 'Bahis' 

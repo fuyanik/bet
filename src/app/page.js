@@ -3,6 +3,7 @@ import { useState } from 'react'
 import Hero from "@/components/Hero";
 import Navbar from "@/components/Navbar";
 import Image from "next/image";
+import BottomNavbar from '@/components/BottomNavbar';
 
 export default function Home() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -18,6 +19,7 @@ export default function Home() {
         setUserData={setUserData}
       />
       <Hero />
+      <BottomNavbar />
     </div>
   );
 }

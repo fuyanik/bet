@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
 const PuzzleCaptcha = ({ 
   sliderPosition, 
@@ -9,8 +9,31 @@ const PuzzleCaptcha = ({
   handleSliderMouseDown,
   handleSliderTouchStart 
 }) => {
-  // Calculate if piece is in correct position
-  const pieceInPlace = Math.abs(sliderPosition - targetPosition) < 20;
+  const [isMobile, setIsMobile] = useState(false);
+  const [containerWidth, setContainerWidth] = useState(400);
+  
+  // Mobile detection and container width calculation
+  useEffect(() => {
+    const checkMobile = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      
+      // Calculate container width dynamically
+      if (sliderContainerRef?.current) {
+        setContainerWidth(sliderContainerRef.current.offsetWidth);
+      }
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, [sliderContainerRef]);
+  
+  // Dynamic tolerance based on container width
+  const tolerance = isMobile ? containerWidth * 0.08 : containerWidth * 0.05;
+  
+  // Calculate if piece is in correct position with dynamic tolerance
+  const pieceInPlace = Math.abs(sliderPosition - targetPosition) < tolerance;
   
   // Playing Card Component
   const PlayingCard = ({ isSlot = false, style = {} }) => (
@@ -58,7 +81,7 @@ const PuzzleCaptcha = ({
   );
   
   return (
-    <div className="w-full">
+    <div className="flex flex-col gap-2 w-full">
       <p className="text-gray-700 text-sm mb-3 text-center font-medium">
         🎰 İskambil kartını doğru yere yerleştirin
       </p>
@@ -121,12 +144,13 @@ const PuzzleCaptcha = ({
             pieceInPlace && captchaCompleted ? 'opacity-0 scale-0' : 'opacity-100 scale-100'
           }`}
           style={{ 
-            // Adjusted calculation: at 250px slider position (80%), card should be at slot position
-            // Slot is at right: 30px from the container edge (container width ~400px)
-            // So slot is approximately at 300px from left
-            // When slider is at 250px, card should be at 300px
-            // Formula: 30 (start) + sliderPosition * 1.08 (scale factor)
-            left: `${30 + sliderPosition * 0.94}px`,
+            // Responsive calculation based on container width
+            // Mobile: slightly different scale factor for better alignment
+            // Desktop: standard scale factor
+            // Formula: startPosition + (sliderPosition * scaleFactor)
+            left: isMobile 
+              ? `${containerWidth * 0.075 + sliderPosition * 1.02}px`
+              : `${containerWidth * 0.075 + sliderPosition * 0.94}px`,
             top: '50%',
             transform: `translateY(-50%) ${isDragging ? 'rotate(-5deg) scale(1.1)' : 'rotate(0deg) scale(1)'}`,
             transition: isDragging ? 'left 0.02s linear, transform 0.1s' : 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
