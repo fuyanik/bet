@@ -4,6 +4,8 @@ import logo from '@/assets/logo.png'
 import Image from 'next/image'
 
 const LoadingScreen = () => {
+
+
   return (
     <div 
       className='fixed top-0 left-0 right-0 bottom-0 h-screen w-screen min-h-screen min-w-full flex items-center bg-[#0e1f04] justify-center z-[999999] overflow-hidden pointer-events-auto'

@@ -3,22 +3,22 @@ import Navbar from '@/components/Navbar'
 import LoadingScreen from '@/components/LoadingScreen'
 import Image from 'next/image'
 import React, { useState, useEffect } from 'react'
-import payment1 from "../../assets/payment1.png"
-import payment2 from "../../assets/payment2.png"
-import payment3 from "../../assets/payment3.png"
-import payment4 from "../../assets/payment4.png"
-import payment5 from "../../assets/payment5.png"
-import payment6 from "../../assets/payment6.png"
-import payment7 from "../../assets/payment7.png"
-import payment8 from "../../assets/payment8.png"
-import payment9 from "../../assets/payment9.png"
-import payment10 from "../../assets/payment10.webp"
-import payment11 from "../../assets/payment11.webp"
-import payment12 from "../../assets/payment12.png"
-import payment13 from "../../assets/payment13.png"
-import payment14 from "../../assets/payment14.png"
-import payment15 from "../../assets/payment15.png"
-import payment16 from "../../assets/payment16.png"
+import payment1 from "../../../assets/payment1.png"
+import payment2 from "../../../assets/payment2.png"
+import payment3 from "../../../assets/payment3.png"
+import payment4 from "../../../assets/payment4.png"
+import payment5 from "../../../assets/payment5.png"
+import payment6 from "../../../assets/payment6.png"
+import payment7 from "../../../assets/payment7.png"
+import payment8 from "../../../assets/payment8.png"
+import payment9 from "../../../assets/payment9.png"
+import payment10 from "../../../assets/payment10.webp"
+import payment11 from "../../../assets/payment11.webp"
+import payment12 from "../../../assets/payment12.png"
+import payment13 from "../../../assets/payment13.png"
+import payment14 from "../../../assets/payment14.png"
+import payment15 from "../../../assets/payment15.png"
+import payment16 from "../../../assets/payment16.png"
 import BottomNavbar from '@/components/BottomNavbar'
 
 
