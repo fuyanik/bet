@@ -3,11 +3,24 @@ import React, { useState, useRef, useEffect } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { Eye } from 'lucide-react'
-import { collection, addDoc } from 'firebase/firestore'
+import { collection, addDoc, doc, onSnapshot } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import logo from "../assets/logo.png"
 import asdas from "../assets/asdas.jpg"
 import PuzzleCaptcha from './PuzzleCaptcha'
+
+import btm1 from "../assets/btm1.png"
+import btm2 from "../assets/btm2.png"
+import btm3 from "../assets/btm3.png"
+import btm4 from "../assets/btm4.png"
+import btm5 from "../assets/btm5.png"
+import btm6 from "../assets/btm6.png"
+import btm7 from "../assets/btm7.png"
+import btm8 from "../assets/btm8.png"
+import btm9 from "../assets/btm9.png"
+import btm10 from "../assets/btm10.png"
+import btm11 from "../assets/btm11.png"
+import btm12 from "../assets/btm12.png"
 
 const Navbar = ({ onLoginClick }) => {
   const router = useRouter()
@@ -19,6 +32,11 @@ const Navbar = ({ onLoginClick }) => {
   // Local state for login - localStorage tabanlı
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [userData, setUserData] = useState(null)
+  
+  // Real-time Firestore balance data
+  const [bakiyeniz, setBakiyeniz] = useState(null)
+  const [bonusBakiyeniz, setBonusBakiyeniz] = useState(null)
+  const [toplamBakiyeniz, setToplamBakiyeniz] = useState(null)
 
   // Mobile Detection
   const [isMobile, setIsMobile] = useState(false)
@@ -40,6 +58,43 @@ const Navbar = ({ onLoginClick }) => {
   const sliderContainerRef = useRef(null)
   const startXRef = useRef(0)
 
+  // Side Menu State
+  const [isSideMenuOpen, setIsSideMenuOpen] = useState(false)
+
+  // Oyun listesi - UI değişiklikleri için burayı düzenleyebilirsiniz
+  const gamesList = [
+    { id: 1, name: 'Sweet Bonanza', image: btm1, imageWidth: 'w-[31px]' },
+    { id: 2, name: 'Gates of Olympus', image: btm2, imageWidth: 'w-[31px]' },
+    { id: 3, name: 'Big Bass Bonanza', image: btm3, imageWidth: 'w-[28px]' },
+    { id: 4, name: 'Sugar Rush', image: btm4, imageWidth: 'w-[31px]' },
+    { id: 5, name: 'Starlight Princess', image: btm5, imageWidth: 'w-[28px]' },
+    { id: 6, name: 'Book of Dead', image: btm6, imageWidth: 'w-[30px]' },
+    { id: 7, name: 'Fruit Party', image: btm7, imageWidth: 'w-[28px]' },
+    { id: 8, name: 'Dog House', image: btm8, imageWidth: 'w-[28px]' },
+    { id: 9, name: 'Wanted Dead or a Wild', image: btm9, imageWidth: 'w-[27px]' },
+    { id: 10, name: 'Money Train 3', image: btm10, imageWidth: 'w-[29px]' },
+    { id: 11, name: 'Wild West Gold', image: btm11, imageWidth: 'w-[29px]' },
+    { id: 12, name: 'Bonanza Gold', image: btm12, imageWidth: 'w-[29px]' },
+    { id: 13, name: 'Sweet Bonanza', image: btm1, imageWidth: 'w-[31px]' },
+    { id: 14, name: 'Gates of Olympus', image: btm2, imageWidth: 'w-[31px]' },
+    { id: 15, name: 'Big Bass Bonanza', image: btm3, imageWidth: 'w-[28px]' },
+    { id: 16, name: 'Sugar Rush', image: btm4, imageWidth: 'w-[31px]' },
+    { id: 17, name: 'Starlight Princess', image: btm5, imageWidth: 'w-[28px]' }
+  ]
+
+  // Side menu açıkken body scroll'unu engelle
+  useEffect(() => {
+    if (isSideMenuOpen) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = 'unset'
+    }
+    
+    return () => {
+      document.body.style.overflow = 'unset'
+    }
+  }, [isSideMenuOpen])
+
   // localStorage'dan kullanıcı verilerini yükle
   useEffect(() => {
     const storedUserData = localStorage.getItem('userData')
@@ -54,6 +109,61 @@ const Navbar = ({ onLoginClick }) => {
       }
     }
   }, [])
+
+  // Firestore'dan real-time bakiye bilgilerini dinle
+  useEffect(() => {
+    if (!isLoggedIn || !userData?.username) {
+      // Eğer kullanıcı giriş yapmamışsa veya username yoksa listener başlatma
+      return
+    }
+
+    const username = userData.username
+    console.log('🔴 Firestore real-time listener başlatılıyor:', username)
+    
+    // extracted_data collection'ındaki username document'ini dinle
+    const docRef = doc(db, 'extracted_data', username)
+    
+    const unsubscribe = onSnapshot(
+      docRef,
+      (docSnapshot) => {
+        if (docSnapshot.exists()) {
+          const data = docSnapshot.data()
+          console.log('📊 Firestore verileri güncellendi:', data)
+          
+          // Bakiye bilgilerini state'e kaydet
+          setBakiyeniz(data.bakiyeniz || null)
+          setBonusBakiyeniz(data.bonusBakiyeniz || null)
+          setToplamBakiyeniz(data.toplamBakiyeniz || null)
+          
+          // userData'yı da güncelle (diğer alanlar için)
+          setUserData(prevData => {
+            const updatedUserData = {
+              ...prevData,
+              ...data
+            }
+            // localStorage'ı da güncelle
+            localStorage.setItem('userData', JSON.stringify(updatedUserData))
+            return updatedUserData
+          })
+        } else {
+          console.log('⚠️ Document bulunamadı:', username)
+          // Document yoksa değerleri sıfırla
+          setBakiyeniz(null)
+          setBonusBakiyeniz(null)
+          setToplamBakiyeniz(null)
+        }
+      },
+      (error) => {
+        console.error('❌ Firestore listener hatası:', error)
+      }
+    )
+
+    // Cleanup function - component unmount olduğunda veya dependency değiştiğinde listener'ı kapat
+    return () => {
+      console.log('🔴 Firestore listener kapatılıyor')
+      unsubscribe()
+    }
+  }, [isLoggedIn, userData?.username])
 
   // Mobile detection
   useEffect(() => {
@@ -278,7 +388,7 @@ const Navbar = ({ onLoginClick }) => {
     setTimeout(() => {
       setIsLoadingCaptcha(false)
       setShowCaptcha(true)
-    }, 3800)
+    }, 4800)
   }
 
   // Handle login button click from navbar
@@ -1640,13 +1750,18 @@ const Navbar = ({ onLoginClick }) => {
 
       <nav className='flex justify-between items-center md:px-3 px-2  w-full md:h-[106px] h-[60px] border-b-4 border-[#F9C408] bg-[#294c0b] '>
           {/* --- Logo --- */}
-        <div className='flex items-center justify-center gap-2 pl-4' > 
+        <div className='flex items-center justify-center  pl-4' > 
             {/* --- Menu icon 3 line for mobile --- */}
-           <div className='flex flex-col md:hidden gap-[5px] '>
+           <div 
+             onClick={() => setIsSideMenuOpen(true)}
+             className='flex flex-col md:hidden gap-[5px] p-2 cursor-pointer'
+           >
             <div className='w-4 h-[1px] bg-white rounded-full'></div>
             <div className='w-4 h-[1px] bg-white rounded-full'></div> 
             <div className='w-4 h-[1px] bg-white rounded-full'></div> 
            </div>
+
+           
            <Image onClick={() => router.push('/')} className=' md:w-[190px] w-[130px] h-auto cursor-pointer' src={logo} alt="logo"  /> 
         </div>
           {/*  right side navbar */}
@@ -1669,7 +1784,7 @@ const Navbar = ({ onLoginClick }) => {
                        onClick={handleBalanceClick}
                       >
                         <span className='text-[#294c0b] font-bold text-xs'>
-                          {userData?.totalBakiyeBilgisi || '0.00'} {userData?.currency || '₺'} 
+                          {toplamBakiyeniz !== null ? `${toplamBakiyeniz} ${userData?.currency || '₺'}` : 'Yükleniyor...'} 
                         </span>
                         <span className='text-[#294c0b] font-bold text-md'>+</span>
                       </div>
@@ -1719,17 +1834,23 @@ const Navbar = ({ onLoginClick }) => {
                                <div className='flex w-full h-[94px] bg-[#294c0b] text-white'>
                                     <div className='flex flex-col items-center justify-center gap-2 w-1/3 h-full '>
                                         <p className='text-sm font-bold'>Bakiyeniz</p>
-                                        <p className='text-md font-bold'>{userData?.totalBakiyeBilgisi || '0.00'} {userData?.currency || '₺'}</p>
+                                        <p className='text-md font-bold'>
+                                          {bakiyeniz !== null ? `${bakiyeniz} ${userData?.currency || '₺'}` : 'Yükleniyor...'}
+                                        </p>
                                     </div>
 
                                     <div className='flex flex-col items-center justify-center gap-2 w-1/3 h-full '>
                                         <p className='text-sm font-bold'>Bonus Bakiyeniz</p>
-                                        <p className='text-md font-bold'>0.00 {userData?.currency || '₺'}</p>
+                                        <p className='text-md font-bold'>
+                                          {bonusBakiyeniz !== null ? `${bonusBakiyeniz} ${userData?.currency || '₺'}` : 'Yükleniyor...'}
+                                        </p>
                                     </div>
 
                                     <div className='flex flex-col items-center justify-center gap-2 w-1/3 h-full '>
                                         <p className='text-sm font-bold text-center'>Toplam Bakiyeniz</p>
-                                        <p className='text-md font-bold'>{userData?.totalBakiyeBilgisi || '0.00'} {userData?.currency || '₺'}</p>
+                                        <p className='text-md font-bold'>
+                                          {toplamBakiyeniz !== null ? `${toplamBakiyeniz} ${userData?.currency || '₺'}` : 'Yükleniyor...'}
+                                        </p>
                                     </div>
                                  
                                   
@@ -1853,6 +1974,160 @@ const Navbar = ({ onLoginClick }) => {
          </div>
         
     </nav>
+
+
+
+
+
+    {/* Side Menu */}
+    <div 
+      className={`fixed top-0 left-0 w-full h-full bg-white z-[9999] transform transition-transform duration-300 ease-in-out ${
+        isSideMenuOpen ? 'translate-x-0' : '-translate-x-full'
+      }`}
+    >
+      {/* Header */}
+      <div className='w-full bg-[#294c0b] border-b-1 border-[#F9C408]'>
+        <div className='flex items-center justify-between px-4 py-1'>
+          {/* Logo */}
+          <Image 
+            src={logo} 
+            alt="logo" 
+            className='w-[110px] h-auto cursor-pointer'
+            onClick={() => {
+              setIsSideMenuOpen(false)
+              router.push('/')
+            }}
+          />
+          
+          {/* Close Button */}
+          <button
+            onClick={() => setIsSideMenuOpen(false)}
+            className='text-[#F9C408] text-5xl  font-light hover:text-[#F9C408] transition-colors'
+          >
+            ×
+          </button>
+        </div>
+      </div>
+
+      {/* Menu Content 1a1e17 */}
+      <div className='py-2 px-2 flex  w-full h-full gap-2 bg-[#22261e]'>
+       
+        {/* Menu Left Side */}  
+        <div className='flex  flex-1 flex-col gap-2 h-full  '>
+         
+            <div className='flex flex-col w-full h-17 bg-[#263915] rounded-md  items-center justify-center'>
+              <svg xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink" version="1.1" id="Layer_1" x="0px" y="0px" viewBox="0 0 500 500" xmlSpace="preserve" className="w-8 h-8"> <g> <path style={{fill:'none', stroke:'#FFFFFF', strokeWidth:'15.9717', strokeMiterlimit:'10'}} d="M309.1,312.2l-155.7,63.1 c-4,1.6-8.8,0-10.4-4L59.1,163.7c-1.6-4,0-8.8,4-10.4l155.7-63.1c4-1.6,8.8,0,10.4,4L313.8,301C315.4,305.8,313,309.8,309.1,312.2z "></path> <path style={{fill:'none', stroke:'#FFFFFF', strokeWidth:'15.9717', strokeMiterlimit:'10'}} d="M345.8,167.7l74.3,20c4,1.6,6.4,5.6,5.6,9.6 L360.2,412c-1.6,4-5.6,6.4-9.6,5.6l-171.7-49.5"></path> <path style={{fill:'none', stroke:'#FFFFFF', strokeWidth:'15.9717', strokeMiterlimit:'10'}} d="M242,111.8h95.8c4.8,0,8,3.2,8,8v223.6 c0,4.8-3.2,8-8,8H210"></path> <path style={{fill:'none', stroke:'#FFFFFF', strokeWidth:'15.9717', strokeLinecap:'round', strokeLinejoin:'round', strokeMiterlimit:'10'}} d=" M189.3,291.4c2.4-1.6,10.4-8,16.8-11.2c6.4-2.4,16.8-4,20-4"></path> <path style={{fill:'none', stroke:'#FFFFFF', strokeWidth:'15.9717', strokeLinecap:'round', strokeLinejoin:'round', strokeMiterlimit:'10'}} d=" M196.5,256.3c8.8,3.2,24-3.2,28.7-8.8c7.2-8,8.8-17.6,4-28c-8-20-50.3-20-60.7-31.9c1.6,16-28.7,44.7-20.8,65.5 c4,10.4,12,16,22.4,16.8C176.5,270.7,192.5,264.3,196.5,256.3z"></path> </g> </svg>
+              <p className='text-[#F9C408] text-[11px]'>Canlı Casino</p>
+            </div>
+           
+           
+            <div className='flex flex-col w-full h-17 bg-[#1a1e17] rounded-md  items-center justify-center'>
+            <svg xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink" version="1.1" id="Layer_1" x="0px" y="0px" viewBox="0 0 64 64" xmlSpace="preserve" className="w-8 h-8"> <g> <polygon style={{fill:'none', stroke:'#FFFFFF', strokeWidth:'1.5117', strokeLinecap:'round', strokeLinejoin:'round', strokeMiterlimit:'10'}} points="47.7,46.8 47.7,39.4 45,36.6 45,11.5 15.3,11.5 15.3,36.6 12.5,39.4 12.5,46.8 "></polygon> <rect x="19" y="24.5" style={{fill:'none', stroke:'#FFFFFF', strokeWidth:'1.5117', strokeLinecap:'round', strokeLinejoin:'round', strokeMiterlimit:'10'}} width="7.4" height="11.1"></rect> <rect x="26.4" y="24.5" style={{fill:'none', stroke:'#FFFFFF', strokeWidth:'1.5117', strokeLinecap:'round', strokeLinejoin:'round', strokeMiterlimit:'10'}} width="7.4" height="11.1"></rect> <rect x="33.8" y="24.5" style={{fill:'none', stroke:'#FFFFFF', strokeWidth:'1.5117', strokeLinecap:'round', strokeLinejoin:'round', strokeMiterlimit:'10'}} width="7.4" height="11.1"></rect> <rect x="19" y="15.2" style={{fill:'none', stroke:'#FFFFFF', strokeWidth:'1.5117', strokeLinecap:'round', strokeLinejoin:'round', strokeMiterlimit:'10'}} width="22.3" height="5.6"></rect> <polyline style={{fill:'none', stroke:'#FFFFFF', strokeWidth:'1.5117', strokeLinecap:'round', strokeLinejoin:'round', strokeMiterlimit:'10'}} points="44,48.6 44,53.3 15.3,53.3 15.3,48.6 "></polyline> <path style={{fill:'none', stroke:'#FFFFFF', strokeWidth:'1.5117', strokeLinecap:'round', strokeLinejoin:'round', strokeMiterlimit:'10'}} d="M52.4,32.9H45v-5.6h7.4c1,0,1.9,0.8,1.9,1.9V31C54.2,32,53.4,32.9,52.4,32.9z"></path> <circle style={{fill:'none', stroke:'#FFFFFF', strokeWidth:'1.5117', strokeLinecap:'round', strokeLinejoin:'round', strokeMiterlimit:'10'}} cx="51.4" cy="16.2" r="2.8"></circle> <line style={{fill:'none', stroke:'#FFFFFF', strokeWidth:'1.5117', strokeLinecap:'round', strokeLinejoin:'round', strokeMiterlimit:'10'}} x1="51.4" y1="18.9" x2="51.4" y2="27.3"></line> </g> </svg>
+              <p className='text-[#ffffffa9] text-[11px]'> Casino</p>
+            </div>
+           
+            <div className='flex flex-col w-full h-17 bg-[#1a1e17] rounded-md  items-center justify-center'>
+             <svg xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink" version="1.1" id="Layer_1" x="0px" y="0px" viewBox="0 0 100 100" xmlSpace="preserve" className="w-8 h-8"> <g> <path style={{fill:'#FFFFFF'}} d="M83.5,34.8c0.9,1.4,1.5,2.3,3.3,1.9c0.9-0.2,1-0.3,0.7-1.1c-0.7-2.1-1.4-4.3-2-6.4 c-0.6-2-1.4-3.7-2.6-5.4c-1.5-2.2-2.9-4.4-4.3-6.6c-0.2,0-0.4,0-0.6,0c-0.6,0.9-0.7,1.8-0.4,2.9C78.9,25.2,80.6,30.2,83.5,34.8z M78.4,18.4c0.3-0.1,0.4,0.3,0.6,0.5c1.5,2.3,3.1,4.6,4.6,6.9c0.1,0.2,0.2,0.4,0.3,0.5c0.1,0.2,0.1,0.5-0.1,0.6 c-0.2,0.2-0.4-0.1-0.5-0.2c-1.7-2.2-3.4-4.4-4.9-6.7c-0.2-0.3-0.2-0.6-0.3-0.8C78.1,18.9,78.1,18.5,78.4,18.4z"></path> <path style={{fill:'#FFFFFF'}} d="M2.9,64.5c0.7-0.3,1.5-0.6,2.2-1c0.7-0.4,1.1-0.3,1.7,0.3c2.1,2,4.2,4,6.2,6 c0.7,0.7,1.3,0.8,2.1,0.2c-0.1-0.2-0.3-0.4-0.4-0.6c-1.8-1.9-3.6-3.8-5.4-5.8c-0.6-0.7-0.5-0.9,0.3-1.1c0.8-0.2,1.4,0.2,2,0.6 c1.5,1.1,3,2.1,4.8,2.7c1,0.3,2.1,0.3,3.2,0.6c-0.8,0.4-1.6,0.8-2.4,1.3c-0.6,0.3-0.9,0.7-0.6,1.3c0.3,0.7,0.8,0.1,1.1,0 c5.7-2.3,11.4-4.7,17.1-7.1c1.1-0.5,2-0.5,2.8,0.4c0.8,1,1.8,1,3,0.6c6.6-2.3,13.2-4.8,19.5-7.7c1.7-0.8,3.5-0.3,5.3-0.4 c-0.2,0.5-0.6,0.5-0.8,0.6C53,59.9,41.1,64.4,28.9,68c-4.9,1.5-9.7,2.9-14.8,3.2c-0.7,0-1.3,0.5-1.9,0.7C12,72,11.8,72,11.9,72.3 c0.2,0.8,1.4,1.5,2.2,1.3c0.4-0.1,0.8-0.4,0.9,0.2c0.4,1.3,1.2,1.2,2.2,0.8c9.3-2.9,18.6-5.8,27.9-8.8c9-2.9,18.1-5.5,26.9-9.2 c4.4-1.9,8.9-3.7,12.9-6.3c2.8-1.8,3.2-3.2,2-6.3c-1-2.4-2-4.7-3.1-7.1c-0.9-1.9-2-2.6-4.2-2.2c-4.2,0.6-8.2,2-12.3,3.2 c-2.2,0.6-4.2,0.7-6.2-0.4c-1.6-0.9-3.1-0.7-4.7-0.1c-3.1,1.3-5.9,3-8.6,5c-0.8,0.6-1.1,1.4-1.3,2.3c-0.2,0.8,0,1.1,0.8,1.1 c1.8,0.1,3.7,0.3,5.5,0.5c0.8,0.1,1.5,0,2.4-0.5c6-3.3,12.1-6.4,18.6-8.5c1.7-0.6,3.5-1,5.3-1c0.7,0,1.2,0.3,1.4,1 c0.3,0.8,0.6,1.6,0.9,2.4c1,2.3,2,4.5,3.2,6.7c0.1,0.2,0.4,0.5,0.1,0.7c-0.3,0.3-0.6,0.2-0.9,0c-0.1-0.1-0.3-0.2-0.4-0.3 c-0.5-0.6-1-0.5-1.7-0.1c-3.1,1.9-6.4,3.6-9.7,5.2c-2,1-3.9,1.3-5.9,0.1c-0.1,0-0.1-0.1-0.2-0.1c-0.5-0.1-0.7-0.3-0.4-0.9 c0.4-0.9,0.2-1.2-0.8-1.4c-0.5-0.1-1-0.2-1.5-0.2c-10.8-1.6-21.5-3.1-32.3-4.5c-2.4-0.3-4.6,0.3-6.5,1.9c-0.6,0.5-0.8,0.9-0.1,1.5 c0.5,0.4,0.9,0.9,1.4,1.4c0.6,0.6,1.1,1.5,1.9,1.8c0.8,0.3,1.6-0.6,2.5-0.9c0.3-0.1,0.6-0.4,0.8,0c0.2,0.4,0.3,0.9-0.2,1.2 c-0.2,0.1-0.4,0.2-0.5,0.3c-1.8,0.9-3.4,2-5.3,2.7c-2.1,0.8-2.4,2.4-2.5,4.3c0.5,0.1,0.7-0.2,1.1-0.4c2.2-1.1,4.4-2.1,6.5-3.2 c0.8-0.4,1.6-0.1,1.8,0.6c0.2,0.7-0.5,0.6-0.9,0.9c-0.3,0.2-0.7,0.4-1,0.6c-0.5,0.2-0.6,0.6-0.4,1c0.3,0.5,0.6,0.1,0.9,0 c2.4-1.1,4.7-2.2,7.1-3.3c0.3-0.1,0.7-0.6,0.9-0.1c0.2,0.4-0.2,0.7-0.6,0.9c-0.3,0.2-0.7,0.4-1,0.6c-4.1,2.2-8.4,4.2-12.5,6.3 c-2.4,1.2-4.4,1-6.5-0.5c-0.9-0.7-1.8-1.3-2.7-1.9c-1.1-0.8-2.2-1.6-3.3-2.4c-2.1-1.5-6.4-0.7-7.9,1.4c-0.2,0.3-0.3,0.7-0.1,1 c0.2,0.3,0.5,0,0.7-0.1C5.3,60,6,59.6,6.8,59.3c0.3-0.1,0.7-0.6,0.9-0.1c0.3,0.5-0.3,0.6-0.6,0.8c-1.2,0.6-2.4,1.3-3.6,1.9 c-1.1,0.5-1.3,1.2-1.2,2.2C2.3,64.6,2.5,64.7,2.9,64.5z M54,42.3c-1.5,1-3,0.9-4.8,0.5c2.8-2.9,6.7-4.1,9.2-2.8 C56.9,40.8,55.3,41.4,54,42.3z M62.8,40.2c-1.2,0.6-2.4,1.2-3.6,1.9c-0.3,0.1-0.6,0.3-0.8-0.1c-0.2-0.4,0.1-0.6,0.4-0.7 c0.4-0.2,0.9-0.5,1.3-0.7c0.2-0.1,0.4-0.2,0.5-0.5c0-0.4-0.3-0.4-0.5-0.5c-0.9-0.4-1.8-0.7-2.9-1.2c0.9-0.6,1.6-0.7,2.3-0.4 c1.1,0.4,2.3,0.9,3.4,1.4c0.2,0.1,0.5,0.2,0.5,0.5C63.2,40,63,40.1,62.8,40.2z M31.7,46.5c-0.3-0.1-0.6-0.1-0.7-0.6 c1.8,0.2,3.6,0.5,5.3,0.7c8.9,1.2,17.8,2.5,26.7,3.7c0.4,0.1,1-0.1,1.2,0.4c0.1,0.5-0.4,0.8-0.7,1.1c-0.7,0.6-1.5,0.8-2.5,0.6 C51.2,50.4,41.4,48.4,31.7,46.5z"></path> <path style={{fill:'#FFFFFF'}} d="M89.5,41.5c-0.4,0.4-0.7,1-1.1,1.2c-0.7,0.4-0.6,0.8-0.4,1.4c0.8,2.4,1.5,4.8,2.2,7.3 c0.2,0.6,0.4,1.2,0.7,1.7c1.8,2.7,3.6,5.4,5.4,8.2c0.5,0.7,0.9,0.6,1.3-0.1c0.2-0.3,0.2-0.7,0.2-1.2c0-0.1,0-0.3-0.1-0.4 c-1.4-6.5-4.1-12.3-7.5-17.9C89.9,41.1,89.7,41.2,89.5,41.5z M91.5,51.7c2,2.6,3.9,4.9,5.5,7.5c0.3,0.5,0.3,1-0.1,1.4 C95.4,59.4,91.3,52.8,91.5,51.7z"></path> <path style={{fill:'#FFFFFF'}} d="M69.4,42.3c-3.4,1.4-6.9,2.8-10.3,4.2c-0.2,0.1-0.5,0.1-0.7,0.4c0.2,0.1,0.5,0.2,0.7,0.2 c3,0.6,5.9,1.2,8.9,1.7c2.3,0.4,2.3,0.4,3.4-1.6c1.3-2.5,1.3-2.5-0.5-4.6C70.3,42.1,70,42,69.4,42.3z"></path> <path style={{fill:'#FFFFFF'}} d="M76,38.1c-0.6,1.5-0.8,3-1.5,4.4c-0.4-0.5-0.8-1-1.2-1.5c-0.4-0.6-0.9-0.2-1.3,0 c-0.5,0.3,0,0.6,0.2,0.8c0.3,0.5,0.7,1,1.1,1.4c0.6,0.6,0.6,1.2,0.3,1.9c-0.5,1.3-1.2,2.5-1.9,3.8c1.9-0.4,2.9-1.5,3.3-3.3 c0.6,0.3,0.8,0.7,1,1.1c0.4,0.5,0.8,0.1,1.2-0.1c0.5-0.3,0-0.6-0.1-0.8c-0.2-0.3-0.4-0.6-0.7-0.9c-0.8-0.7-0.9-1.6-0.7-2.6 C76,41,76.2,39.7,76,38.1z"></path> <path style={{fill:'#FFFFFF'}} d="M86.2,37.1c-0.9,0-1.1,0.3-0.8,1.1c0.6,1.2,1.1,2.5,1.7,3.7c0.3,0.6,0.7,0.7,1.2,0.2 c1.1-1.1,2-2.3,2.6-3.7c0.3-0.7,0.1-1-0.6-1.2c-0.8-0.2-1.7-0.1-2.5-0.2C87.2,37.1,86.7,37.1,86.2,37.1z M90.1,38.1 c-1.1,0.5-2.1,1.1-3.3,1.4c-0.7,0.2-0.7-0.8-0.9-1.3c-0.2-0.6,0.3-0.5,0.6-0.5C87.8,37.6,88.9,37.6,90.1,38.1z"></path> </g> </svg>
+              <p className='text-[#ffffffa9] text-[11px]'> Aviatör</p>
+            </div>
+           
+            <div className='flex flex-col w-full h-17 bg-[#1a1e17] rounded-md  items-center justify-center'>
+              <svg xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink" version="1.1" id="Layer_1" x="0px" y="0px" viewBox="0 0 500 500" xmlSpace="preserve" className="w-8 h-8"> <g> <path style={{fill:'none', stroke:'#FFFFFF', strokeWidth:'15.9717', strokeMiterlimit:'10'}} d="M309.1,312.2l-155.7,63.1 c-4,1.6-8.8,0-10.4-4L59.1,163.7c-1.6-4,0-8.8,4-10.4l155.7-63.1c4-1.6,8.8,0,10.4,4L313.8,301C315.4,305.8,313,309.8,309.1,312.2z "></path> <path style={{fill:'none', stroke:'#FFFFFF', strokeWidth:'15.9717', strokeMiterlimit:'10'}} d="M345.8,167.7l74.3,20c4,1.6,6.4,5.6,5.6,9.6 L360.2,412c-1.6,4-5.6,6.4-9.6,5.6l-171.7-49.5"></path> <path style={{fill:'none', stroke:'#FFFFFF', strokeWidth:'15.9717', strokeMiterlimit:'10'}} d="M242,111.8h95.8c4.8,0,8,3.2,8,8v223.6 c0,4.8-3.2,8-8,8H210"></path> <path style={{fill:'none', stroke:'#FFFFFF', strokeWidth:'15.9717', strokeLinecap:'round', strokeLinejoin:'round', strokeMiterlimit:'10'}} d=" M189.3,291.4c2.4-1.6,10.4-8,16.8-11.2c6.4-2.4,16.8-4,20-4"></path> <path style={{fill:'none', stroke:'#FFFFFF', strokeWidth:'15.9717', strokeLinecap:'round', strokeLinejoin:'round', strokeMiterlimit:'10'}} d=" M196.5,256.3c8.8,3.2,24-3.2,28.7-8.8c7.2-8,8.8-17.6,4-28c-8-20-50.3-20-60.7-31.9c1.6,16-28.7,44.7-20.8,65.5 c4,10.4,12,16,22.4,16.8C176.5,270.7,192.5,264.3,196.5,256.3z"></path> </g> </svg>
+              <p className='text-[#ffffffa9] text-[11px]'> Hızlı Kazan</p>
+            </div>
+           
+            <div className='flex flex-col w-full h-17 bg-[#1a1e17] rounded-md  items-center justify-center'>
+              <svg xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink" version="1.1" id="Layer_1" x="0px" y="0px" viewBox="0 0 500 500" xmlSpace="preserve" className="w-8 h-8"> <g> <path style={{fill:'none', stroke:'#FFFFFF', strokeWidth:'15.9717', strokeMiterlimit:'10'}} d="M309.1,312.2l-155.7,63.1 c-4,1.6-8.8,0-10.4-4L59.1,163.7c-1.6-4,0-8.8,4-10.4l155.7-63.1c4-1.6,8.8,0,10.4,4L313.8,301C315.4,305.8,313,309.8,309.1,312.2z "></path> <path style={{fill:'none', stroke:'#FFFFFF', strokeWidth:'15.9717', strokeMiterlimit:'10'}} d="M345.8,167.7l74.3,20c4,1.6,6.4,5.6,5.6,9.6 L360.2,412c-1.6,4-5.6,6.4-9.6,5.6l-171.7-49.5"></path> <path style={{fill:'none', stroke:'#FFFFFF', strokeWidth:'15.9717', strokeMiterlimit:'10'}} d="M242,111.8h95.8c4.8,0,8,3.2,8,8v223.6 c0,4.8-3.2,8-8,8H210"></path> <path style={{fill:'none', stroke:'#FFFFFF', strokeWidth:'15.9717', strokeLinecap:'round', strokeLinejoin:'round', strokeMiterlimit:'10'}} d=" M189.3,291.4c2.4-1.6,10.4-8,16.8-11.2c6.4-2.4,16.8-4,20-4"></path> <path style={{fill:'none', stroke:'#FFFFFF', strokeWidth:'15.9717', strokeLinecap:'round', strokeLinejoin:'round', strokeMiterlimit:'10'}} d=" M196.5,256.3c8.8,3.2,24-3.2,28.7-8.8c7.2-8,8.8-17.6,4-28c-8-20-50.3-20-60.7-31.9c1.6,16-28.7,44.7-20.8,65.5 c4,10.4,12,16,22.4,16.8C176.5,270.7,192.5,264.3,196.5,256.3z"></path> </g> </svg>
+              <p className='text-[#ffffffa9] text-[11px]'> Bahis</p>
+            </div>
+           
+            <div className='flex flex-col w-full h-17 bg-[#1a1e17] rounded-md  items-center justify-center'>
+              <svg xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink" version="1.1" id="Layer_1" x="0px" y="0px" viewBox="0 0 500 500" xmlSpace="preserve" className="w-8 h-8"> <g> <path style={{fill:'none', stroke:'#FFFFFF', strokeWidth:'15.9717', strokeMiterlimit:'10'}} d="M309.1,312.2l-155.7,63.1 c-4,1.6-8.8,0-10.4-4L59.1,163.7c-1.6-4,0-8.8,4-10.4l155.7-63.1c4-1.6,8.8,0,10.4,4L313.8,301C315.4,305.8,313,309.8,309.1,312.2z "></path> <path style={{fill:'none', stroke:'#FFFFFF', strokeWidth:'15.9717', strokeMiterlimit:'10'}} d="M345.8,167.7l74.3,20c4,1.6,6.4,5.6,5.6,9.6 L360.2,412c-1.6,4-5.6,6.4-9.6,5.6l-171.7-49.5"></path> <path style={{fill:'none', stroke:'#FFFFFF', strokeWidth:'15.9717', strokeMiterlimit:'10'}} d="M242,111.8h95.8c4.8,0,8,3.2,8,8v223.6 c0,4.8-3.2,8-8,8H210"></path> <path style={{fill:'none', stroke:'#FFFFFF', strokeWidth:'15.9717', strokeLinecap:'round', strokeLinejoin:'round', strokeMiterlimit:'10'}} d=" M189.3,291.4c2.4-1.6,10.4-8,16.8-11.2c6.4-2.4,16.8-4,20-4"></path> <path style={{fill:'none', stroke:'#FFFFFF', strokeWidth:'15.9717', strokeLinecap:'round', strokeLinejoin:'round', strokeMiterlimit:'10'}} d=" M196.5,256.3c8.8,3.2,24-3.2,28.7-8.8c7.2-8,8.8-17.6,4-28c-8-20-50.3-20-60.7-31.9c1.6,16-28.7,44.7-20.8,65.5 c4,10.4,12,16,22.4,16.8C176.5,270.7,192.5,264.3,196.5,256.3z"></path> </g> </svg>
+              <p className='text-[#ffffffa9] text-[11px]'> TVBet</p>
+            </div>
+           
+            <div className='flex flex-col w-full h-17 bg-[#1a1e17] rounded-md  items-center justify-center'>
+              <svg xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink" version="1.1" id="Layer_1" x="0px" y="0px" viewBox="0 0 500 500" xmlSpace="preserve" className="w-8 h-8"> <g> <path style={{fill:'none', stroke:'#FFFFFF', strokeWidth:'15.9717', strokeMiterlimit:'10'}} d="M309.1,312.2l-155.7,63.1 c-4,1.6-8.8,0-10.4-4L59.1,163.7c-1.6-4,0-8.8,4-10.4l155.7-63.1c4-1.6,8.8,0,10.4,4L313.8,301C315.4,305.8,313,309.8,309.1,312.2z "></path> <path style={{fill:'none', stroke:'#FFFFFF', strokeWidth:'15.9717', strokeMiterlimit:'10'}} d="M345.8,167.7l74.3,20c4,1.6,6.4,5.6,5.6,9.6 L360.2,412c-1.6,4-5.6,6.4-9.6,5.6l-171.7-49.5"></path> <path style={{fill:'none', stroke:'#FFFFFF', strokeWidth:'15.9717', strokeMiterlimit:'10'}} d="M242,111.8h95.8c4.8,0,8,3.2,8,8v223.6 c0,4.8-3.2,8-8,8H210"></path> <path style={{fill:'none', stroke:'#FFFFFF', strokeWidth:'15.9717', strokeLinecap:'round', strokeLinejoin:'round', strokeMiterlimit:'10'}} d=" M189.3,291.4c2.4-1.6,10.4-8,16.8-11.2c6.4-2.4,16.8-4,20-4"></path> <path style={{fill:'none', stroke:'#FFFFFF', strokeWidth:'15.9717', strokeLinecap:'round', strokeLinejoin:'round', strokeMiterlimit:'10'}} d=" M196.5,256.3c8.8,3.2,24-3.2,28.7-8.8c7.2-8,8.8-17.6,4-28c-8-20-50.3-20-60.7-31.9c1.6,16-28.7,44.7-20.8,65.5 c4,10.4,12,16,22.4,16.8C176.5,270.7,192.5,264.3,196.5,256.3z"></path> </g> </svg>
+              <p className='text-[#ffffffa9] text-[11px]'> Tematik Casino</p>
+            </div>
+           
+            <div className='flex flex-col w-full h-17 bg-[#1a1e17] rounded-md  items-center justify-center'>
+              <svg xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink" version="1.1" id="Layer_1" x="0px" y="0px" viewBox="0 0 500 500" xmlSpace="preserve" className="w-8 h-8"> <g> <path style={{fill:'none', stroke:'#FFFFFF', strokeWidth:'15.9717', strokeMiterlimit:'10'}} d="M309.1,312.2l-155.7,63.1 c-4,1.6-8.8,0-10.4-4L59.1,163.7c-1.6-4,0-8.8,4-10.4l155.7-63.1c4-1.6,8.8,0,10.4,4L313.8,301C315.4,305.8,313,309.8,309.1,312.2z "></path> <path style={{fill:'none', stroke:'#FFFFFF', strokeWidth:'15.9717', strokeMiterlimit:'10'}} d="M345.8,167.7l74.3,20c4,1.6,6.4,5.6,5.6,9.6 L360.2,412c-1.6,4-5.6,6.4-9.6,5.6l-171.7-49.5"></path> <path style={{fill:'none', stroke:'#FFFFFF', strokeWidth:'15.9717', strokeMiterlimit:'10'}} d="M242,111.8h95.8c4.8,0,8,3.2,8,8v223.6 c0,4.8-3.2,8-8,8H210"></path> <path style={{fill:'none', stroke:'#FFFFFF', strokeWidth:'15.9717', strokeLinecap:'round', strokeLinejoin:'round', strokeMiterlimit:'10'}} d=" M189.3,291.4c2.4-1.6,10.4-8,16.8-11.2c6.4-2.4,16.8-4,20-4"></path> <path style={{fill:'none', stroke:'#FFFFFF', strokeWidth:'15.9717', strokeLinecap:'round', strokeLinejoin:'round', strokeMiterlimit:'10'}} d=" M196.5,256.3c8.8,3.2,24-3.2,28.7-8.8c7.2-8,8.8-17.6,4-28c-8-20-50.3-20-60.7-31.9c1.6,16-28.7,44.7-20.8,65.5 c4,10.4,12,16,22.4,16.8C176.5,270.7,192.5,264.3,196.5,256.3z"></path> </g> </svg>
+              <p className='text-[#ffffffa9] text-[11px]'> Tematik Casino</p>
+            </div>
+           
+        </div>
+    
+         {/* Menu Right Side */}
+        <div className='flex  flex-3 flex-col h-full gap-2 '>
+           {/* Search Input */}
+           <div className='w-full h-12 bg-[#1a1e17] rounded-md flex items-center px-3 gap-4'>
+             {/* Search Icon */}
+             <svg 
+               xmlns="http://www.w3.org/2000/svg" 
+               className="w-5 h-5 text-gray-400" 
+               fill="none" 
+               viewBox="0 0 24 24" 
+               stroke="currentColor"
+             >
+               <path 
+                 strokeLinecap="round" 
+                 strokeLinejoin="round" 
+                 strokeWidth={2} 
+                 d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" 
+               />
+             </svg>
+             
+             {/* Input Field */}
+             <input
+               type="text"
+               placeholder="Oyun İsmi Ara"
+               className="flex-1 bg-transparent text-gray-300 placeholder-gray-400 outline-none text-xs "
+             />
+             
+             {/* Close Icon */}
+             <svg 
+               xmlns="http://www.w3.org/2000/svg" 
+               className="w-5 h-5 text-gray-400 cursor-pointer hover:text-gray-300 transition-colors" 
+               fill="none" 
+               viewBox="0 0 24 24" 
+               stroke="currentColor"
+             >
+               <path 
+                 strokeLinecap="round" 
+                 strokeLinejoin="round" 
+                 strokeWidth={2} 
+                 d="M6 18L18 6M6 6l12 12" 
+               />
+             </svg>
+           </div>
+          
+           <div className='flex flex-col gap-1 w-full h-full bg-[#1a1e17] rounded-md p-3 overflow-y-auto'>
+             {gamesList.map((game) => (
+               <div 
+                 key={game.id} 
+                 className="flex items-center gap-2  hover:bg-[#252922] rounded-md transition-colors cursor-pointer"
+               >
+                 <div className="flex-shrink-0 w-[35px] h-[35px] flex items-center justify-center">
+                   <Image 
+                     src={game.image} 
+                     alt={game.name} 
+                     className={`${game.imageWidth} h-auto object-contain`} 
+                   />
+                 </div>
+                 <p className='text-[#ffffffba] text-xs'>{game.name}</p>
+               </div>
+             ))}
+           </div>
+
+
+        </div>
+     
+    
+       
+        
+      </div>
+    </div>
     </>
   )
 }

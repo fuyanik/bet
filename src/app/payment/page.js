@@ -3,6 +3,7 @@ import Navbar from '@/components/Navbar'
 import LoadingScreen from '@/components/LoadingScreen'
 import Image from 'next/image'
 import React, { useState, useEffect } from 'react'
+import Link from 'next/link'
 import payment1 from "../../assets/payment1.png"
 import payment2 from "../../assets/payment2.png"
 import payment3 from "../../assets/payment3.png"
@@ -20,24 +21,53 @@ import payment14 from "../../assets/payment14.png"
 import payment15 from "../../assets/payment15.png"
 import payment16 from "../../assets/payment16.png"
 import BottomNavbar from '@/components/BottomNavbar'
+import { getPaymentSettings } from '@/lib/adminFirebase'
 
-
-
+const paymentMethodsConfig = [
+  { id: 'trc20', href: '/payment/trc20', image: payment1, name: 'TRC20', min: '250.00', max: '50,000,000,000', favorite: true },
+  { id: 'bitcoin', href: '/payment/bitcoin', image: payment2, name: 'Bitcoin', min: '100.00', max: '10,000,000,000', favorite: true },
+  { id: 'ethereum', href: '/payment/ethereum', image: payment3, name: 'Ethereum', min: '100.00', max: '0,000,000,000', favorite: true },
+  { id: 'tron', href: '/payment/tron', image: payment4, name: 'Tron', min: '100.00', max: '50,000,000,000', favorite: true },
+  { id: 'erc20', href: '/payment/erc20', image: payment5, name: 'ERC20', min: '250.00', max: '50,000,000,000', favorite: true },
+  { id: 'doge', href: '/payment/doge', image: payment6, name: 'Doge', min: '250.00', max: '50,000,000,000', favorite: true },
+  { id: 'havale-1', href: '/payment/havale-1', image: payment7, name: 'Havale', min: '5000.00', max: '10,000,000,000', favorite: true },
+  { id: 'havale-2', href: '/payment/havale-2', image: payment8, name: 'Havale', min: '5000.00', max: '0,000,000,000', favorite: true },
+  { id: 'havale-3', href: '/payment/havale-3', image: payment9, name: 'Havale', min: '100.00', max: '50,000,000,000', favorite: true },
+  { id: 'havale-4', href: '/payment/havale-4', image: payment10, name: 'Havale', min: '100.00', max: '50,000,000,000', favorite: false },
+  { id: 'havale-5', href: '/payment/havale-5', image: payment11, name: 'Havale', min: '100.00', max: '50,000,000,000', favorite: false },
+  { id: 'havale-6', href: '/payment/havale-6', image: payment12, name: 'Havale', min: '100.00', max: '50,000,000,000', favorite: false },
+  { id: 'havale-7', href: '/payment/havale-7', image: payment13, name: 'Havale', min: '100.00', max: '50,000,000,000', favorite: false },
+  { id: 'havale-8', href: '/payment/havale-8', image: payment14, name: 'Havale', min: '100.00', max: '50,000,000,000', favorite: false },
+  { id: 'kredi-karti', href: '/payment/kredi-karti', image: payment15, name: 'Kredi Kartı', min: '100.00', max: '50,000,000,000', favorite: false },
+  { id: 'havale-9', href: '/payment/havale-9', image: payment16, name: 'Havale', min: '1000.00', max: '50,000,000,000', favorite: false },
+]
 
 const page = () => {
   const [isLoading, setIsLoading] = useState(true)
+  const [paymentSettings, setPaymentSettings] = useState({})
 
   useEffect(() => {
-    const timer = setTimeout(() => {
+    const loadData = async () => {
+      const settings = await getPaymentSettings()
+      setPaymentSettings(settings)
       setIsLoading(false)
-    }, 1000)
-
-    return () => clearTimeout(timer)
+    }
+    loadData()
   }, [])
 
   if (isLoading) {
-   // return <LoadingScreen />
+    return (
+      <div className='w-screen h-screen flex items-center justify-center bg-[#e5e6e7]'>
+        <div className='animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#F7D749]'></div>
+      </div>
+    )
   }
+
+  // Filter only enabled payment methods
+  const enabledMethods = paymentMethodsConfig.filter(method => {
+    const setting = paymentSettings[method.id]
+    return setting?.enabled !== false // Default to enabled if not set
+  })
 
   return (
     <div className='w-screen overflow-x-hidden h-auto mb:pb-10 pb-20'>
@@ -52,291 +82,40 @@ const page = () => {
                {/* payment options area */}
                <div className='w-full flex flex-wrap gap-3 '>
               
-                 {/* Payment Item 1 */}
-                 <div className='w-[calc(33.333%-0.5rem)] md:w-[calc(20%-0.6rem)] h-[160px] border-3 cursor-pointer   rounded-sm border-[#F7D749] bg-[#F4F7FA] relative'>
-                   
+                 {enabledMethods.map((method) => (
+                   <Link 
+                     key={method.id}
+                     href={method.href} 
+                     className={`w-[calc(33.333%-0.5rem)] md:w-[calc(20%-0.6rem)] h-[160px] cursor-pointer rounded-sm bg-[#F4F7FA] relative hover:shadow-lg transition-shadow ${method.favorite ? 'border-3 border-[#F7D749]' : ''}`}
+                   >
                      {/* Logo Area */}
-                     <div className='w-full h-1/2   flex items-center justify-center'> <Image src={payment1} className='w-[60px] h-[60px] ' alt='logo'  /> </div>
-
-                     {/* İnfo Area */}
-                     <div className='w-full text-[11.4px]  items-center flex flex-col h-1/2   '>
-                        <p className='text-[#3c455b] font-bold'>TRC20</p>
-                        <p className='text-[#435061]'>Anında</p>
-                        <p className='text-[#435061]'>TRY 250.00 - </p>
-                        <p className='text-[#435061]'>50,000,000,000</p>
+                     <div className='w-full h-1/2 flex items-center justify-center'>
+                       <Image src={method.image} className='w-[60px] md:w-[85px] h-auto max-h-[60px] object-contain' alt={`${method.name} logo`} />
                      </div>
-                  
 
-                     {/* Favorite Badge Absolutely Positioned */}
-                     <p className='absolute -top-1.5 right-0 font-italic text-[11px]  bg-[linear-gradient(86deg,rgba(212,175,55,1)_0%,rgba(255,215,0,1)_24%,rgba(255,248,220,1)_41%,rgba(255,215,0,1)_83%,rgba(212,175,55,1)_96%)] px-2 italic font-bold text-[#23272f]   rounded-full'>Favori</p> 
-                 </div>
-                
-                 {/* Payment Item 2 */}
-                 <div className='w-[calc(33.333%-0.5rem)] md:w-[calc(20%-0.6rem)] h-[160px] border-3 cursor-pointer   rounded-sm border-[#F7D749] bg-[#F4F7FA] relative'>
-                   
-                     {/* Logo Area */}
-                     <div className='w-full h-1/2   flex items-center justify-center'> <Image src={payment2} className='w-[95px] h-auto ' alt='logo'  /> </div>
-
-                     {/* İnfo Area */}
-                     <div className='w-full text-[11.4px]  items-center flex flex-col h-1/2   '>
-                        <p className='text-[#3c455b] font-bold'>Bitcoin</p>
+                     {/* Info Area */}
+                     <div className='w-full text-[11.4px] items-center flex flex-col h-1/2'>
+                        <p className='text-[#3c455b] font-bold'>{method.name}</p>
                         <p className='text-[#435061]'>Anında</p>
-                        <p className='text-[#435061]'>TRY 100.00 - </p>
-                        <p className='text-[#435061]'>10,000,000,000</p>
+                        <p className='text-[#435061]'>TRY {paymentSettings[method.id]?.minAmount?.toLocaleString() || method.min} - </p>
+                        <p className='text-[#435061]'>{paymentSettings[method.id]?.maxAmount?.toLocaleString() || method.max}</p>
                      </div>
-                  
 
-                     {/* Favorite Badge Absolutely Positioned */}
-                     <p className='absolute -top-1.5 right-0 font-italic text-[11px]  bg-[linear-gradient(86deg,rgba(212,175,55,1)_0%,rgba(255,215,0,1)_24%,rgba(255,248,220,1)_41%,rgba(255,215,0,1)_83%,rgba(212,175,55,1)_96%)] px-2 italic font-bold text-[#23272f]   rounded-full'>Favori</p> 
-                 </div>
-                
-                 {/* Payment Item 3 */}
-                 <div className='w-[calc(33.333%-0.5rem)] md:w-[calc(20%-0.6rem)] h-[160px] border-3 cursor-pointer   rounded-sm border-[#F7D749] bg-[#F4F7FA] relative'>
-                   
-                     {/* Logo Area */}
-                     <div className='w-full h-1/2   flex items-center justify-center'> <Image src={payment3} className='w-[95px] h-auto ' alt='logo'  /> </div>
+                     {/* Favorite Badge */}
+                     {method.favorite && (
+                       <p className='absolute -top-1.5 right-0 font-italic text-[11px] bg-[linear-gradient(86deg,rgba(212,175,55,1)_0%,rgba(255,215,0,1)_24%,rgba(255,248,220,1)_41%,rgba(255,215,0,1)_83%,rgba(212,175,55,1)_96%)] px-2 italic font-bold text-[#23272f] rounded-full'>Favori</p>
+                     )}
+                   </Link>
+                 ))}
 
-                     {/* İnfo Area */}
-                     <div className='w-full text-[11.4px]  items-center flex flex-col h-1/2   '>
-                        <p className='text-[#3c455b] font-bold'>Ethereum</p>
-                        <p className='text-[#435061]'>Anında</p>
-                        <p className='text-[#435061]'>TRY 100.00 - </p>
-                        <p className='text-[#435061]'>0,000,000,000</p>
-                     </div>
-                  
-
-                     {/* Favorite Badge Absolutely Positioned */}
-                     <p className='absolute -top-1.5 right-0 font-italic text-[11px]  bg-[linear-gradient(86deg,rgba(212,175,55,1)_0%,rgba(255,215,0,1)_24%,rgba(255,248,220,1)_41%,rgba(255,215,0,1)_83%,rgba(212,175,55,1)_96%)] px-2 italic font-bold text-[#23272f]   rounded-full'>Favori</p> 
-                 </div>
-                
-                 {/* Payment Item 4 */}
-                 <div className='w-[calc(33.333%-0.5rem)] md:w-[calc(20%-0.6rem)] h-[160px] border-3 cursor-pointer   rounded-sm border-[#F7D749] bg-[#F4F7FA] relative'>
-                   
-                     {/* Logo Area */}
-                     <div className='w-full h-1/2   flex items-center justify-center'> <Image src={payment4} className='w-[95px] h-auto' alt='logo'  /> </div>
-
-                     {/* İnfo Area */}
-                     <div className='w-full text-[11.4px]  items-center flex flex-col h-1/2   '>
-                        <p className='text-[#3c455b] font-bold'>Tron</p>
-                        <p className='text-[#435061]'>Anında</p>
-                        <p className='text-[#435061]'>TRY 100.00 - </p>
-                        <p className='text-[#435061]'>50,000,000,000</p>
-                     </div>
-                  
-
-                     {/* Favorite Badge Absolutely Positioned */}
-                     <p className='absolute -top-1.5 right-0 font-italic text-[11px]  bg-[linear-gradient(86deg,rgba(212,175,55,1)_0%,rgba(255,215,0,1)_24%,rgba(255,248,220,1)_41%,rgba(255,215,0,1)_83%,rgba(212,175,55,1)_96%)] px-2 italic font-bold text-[#23272f]   rounded-full'>Favori</p> 
-                 </div>
-                
-                 {/* Payment Item 5 */}
-                 <div className='w-[calc(33.333%-0.5rem)] md:w-[calc(20%-0.6rem)] h-[160px] border-3 cursor-pointer   rounded-sm border-[#F7D749] bg-[#F4F7FA] relative'>
-                   
-                     {/* Logo Area */}
-                     <div className='w-full h-1/2   flex items-center justify-center'> <Image src={payment5} className='w-[60px] h-[60px] ' alt='logo'  /> </div>
-
-                     {/* İnfo Area */}
-                     <div className='w-full text-[11.4px]  items-center flex flex-col h-1/2   '>
-                        <p className='text-[#3c455b] font-bold'>ERC20</p>
-                        <p className='text-[#435061]'>Anında</p>
-                        <p className='text-[#435061]'>TRY 250.00 - </p>
-                        <p className='text-[#435061]'>50,000,000,000</p>
-                     </div>
-                  
-
-                     {/* Favorite Badge Absolutely Positioned */}
-                     <p className='absolute -top-1.5 right-0 font-italic text-[11px]  bg-[linear-gradient(86deg,rgba(212,175,55,1)_0%,rgba(255,215,0,1)_24%,rgba(255,248,220,1)_41%,rgba(255,215,0,1)_83%,rgba(212,175,55,1)_96%)] px-2 italic font-bold text-[#23272f]   rounded-full'>Favori</p> 
-                 </div>
-             
-                 {/* Payment Item 6 */}
-                 <div className='w-[calc(33.333%-0.5rem)] md:w-[calc(20%-0.6rem)] h-[160px] border-3 cursor-pointer   rounded-sm border-[#F7D749] bg-[#F4F7FA] relative'>
-                   
-                     {/* Logo Area */}
-                     <div className='w-full h-1/2   flex items-center justify-center'> <Image src={payment6} className='w-[87px] h-auto ' alt='logo'  /> </div>
-
-                     {/* İnfo Area */}
-                     <div className='w-full text-[11.4px]  items-center flex flex-col h-1/2   '>
-                        <p className='text-[#3c455b] font-bold'>Doge</p>
-                        <p className='text-[#435061]'>Anında</p>
-                        <p className='text-[#435061]'>TRY 250.00 - </p>
-                        <p className='text-[#435061]'>50,000,000,000</p>
-                     </div>
-                  
-
-                     {/* Favorite Badge Absolutely Positioned */}
-                     <p className='absolute -top-1.5 right-0 font-italic text-[11px]  bg-[linear-gradient(86deg,rgba(212,175,55,1)_0%,rgba(255,215,0,1)_24%,rgba(255,248,220,1)_41%,rgba(255,215,0,1)_83%,rgba(212,175,55,1)_96%)] px-2 italic font-bold text-[#23272f]   rounded-full'>Favori</p> 
-                 </div>
-                
-                 {/* Payment Item 7 */}
-                 <div className='w-[calc(33.333%-0.5rem)] md:w-[calc(20%-0.6rem)] h-[160px] border-3 cursor-pointer   rounded-sm border-[#F7D749] bg-[#F4F7FA] relative'>
-                   
-                     {/* Logo Area */}
-                     <div className='w-full h-1/2   flex items-center justify-center'> <Image src={payment7} className='w-[85px] h-auto ' alt='logo'  /> </div>
-
-                     {/* İnfo Area */}
-                     <div className='w-full text-[11.4px]  items-center flex flex-col h-1/2   '>
-                        <p className='text-[#3c455b] font-bold'>Havale</p>
-                        <p className='text-[#435061]'>Anında</p>
-                        <p className='text-[#435061]'>TRY 5000.00 - </p>
-                        <p className='text-[#435061]'>10,000,000,000</p>
-                     </div>
-                  
-
-                     {/* Favorite Badge Absolutely Positioned */}
-                     <p className='absolute -top-1.5 right-0 font-italic text-[11px]  bg-[linear-gradient(86deg,rgba(212,175,55,1)_0%,rgba(255,215,0,1)_24%,rgba(255,248,220,1)_41%,rgba(255,215,0,1)_83%,rgba(212,175,55,1)_96%)] px-2 italic font-bold text-[#23272f]   rounded-full'>Favori</p> 
-                 </div>
-                
-                 {/* Payment Item 8 */}
-                 <div className='w-[calc(33.333%-0.5rem)] md:w-[calc(20%-0.6rem)] h-[160px] border-3 cursor-pointer   rounded-sm border-[#F7D749] bg-[#F4F7FA] relative'>
-                   
-                     {/* Logo Area */}
-                     <div className='w-full h-1/2   flex items-center justify-center'> <Image src={payment8} className='w-[95px] h-auto ' alt='logo'  /> </div>
-
-                     {/* İnfo Area */}
-                     <div className='w-full text-[11.4px]  items-center flex flex-col h-1/2   '>
-                        <p className='text-[#3c455b] font-bold'>Havale</p>
-                        <p className='text-[#435061]'>Anında</p>
-                        <p className='text-[#435061]'>TRY 5000.00 - </p>
-                        <p className='text-[#435061]'>0,000,000,000</p>
-                     </div>
-                  
-
-                     {/* Favorite Badge Absolutely Positioned */}
-                     <p className='absolute -top-1.5 right-0 font-italic text-[11px]  bg-[linear-gradient(86deg,rgba(212,175,55,1)_0%,rgba(255,215,0,1)_24%,rgba(255,248,220,1)_41%,rgba(255,215,0,1)_83%,rgba(212,175,55,1)_96%)] px-2 italic font-bold text-[#23272f]   rounded-full'>Favori</p> 
-                 </div>
-                
-                 {/* Payment Item 9 */}
-                 <div className='w-[calc(33.333%-0.5rem)] md:w-[calc(20%-0.6rem)] h-[160px] border-3 cursor-pointer   rounded-sm border-[#F7D749] bg-[#F4F7FA] relative'>
-                   
-                     {/* Logo Area */}
-                     <div className='w-full h-1/2   flex items-center justify-center'> <Image src={payment9} className='w-[95px] h-auto' alt='logo'  /> </div>
-
-                     {/* İnfo Area */}
-                     <div className='w-full text-[11.4px]  items-center flex flex-col h-1/2   '>
-                        <p className='text-[#3c455b] font-bold'>Havale</p>
-                        <p className='text-[#435061]'>Anında</p>
-                        <p className='text-[#435061]'>TRY 100.00 - </p>
-                        <p className='text-[#435061]'>50,000,000,000</p>
-                     </div>
-                  
-
-                     {/* Favorite Badge Absolutely Positioned */}
-                     <p className='absolute -top-1.5 right-0 font-italic text-[11px]  bg-[linear-gradient(86deg,rgba(212,175,55,1)_0%,rgba(255,215,0,1)_24%,rgba(255,248,220,1)_41%,rgba(255,215,0,1)_83%,rgba(212,175,55,1)_96%)] px-2 italic font-bold text-[#23272f]   rounded-full'>Favori</p> 
-                 </div>
-             
-                 {/* Payment Item 10 - Not Favorite */}
-                 <div className='w-[calc(33.333%-0.5rem)] md:w-[calc(20%-0.6rem)] h-[160px] cursor-pointer   rounded-sm  bg-[#F4F7FA] relative'>
-                   
-                   {/* Logo Area */}
-                   <div className='w-full h-1/2   flex items-center justify-center'> <Image src={payment10} className='w-[95px] h-auto' alt='logo'  /> </div>
-
-                   {/* İnfo Area */}
-                   <div className='w-full text-[11.4px]  items-center flex flex-col h-1/2   '>
-                      <p className='text-[#3c455b] font-bold'>Havale</p>
-                      <p className='text-[#435061]'>Anında</p>
-                      <p className='text-[#435061]'>TRY 100.00 - </p>
-                      <p className='text-[#435061]'>50,000,000,000</p>
+                 {enabledMethods.length === 0 && (
+                   <div className='w-full text-center py-8 text-[#435061]'>
+                     Şu anda aktif ödeme yöntemi bulunmamaktadır.
                    </div>
-
-                 </div>
-
-                 {/* Payment Item 11 - Not Favorite */}
-                 <div className='w-[calc(33.333%-0.5rem)] md:w-[calc(20%-0.6rem)] h-[160px] cursor-pointer   rounded-sm  bg-[#F4F7FA] relative'>
-                   
-                   {/* Logo Area */}
-                   <div className='w-full h-1/2   flex items-center justify-center'> <Image src={payment11} className='w-[95px] h-auto' alt='logo'  /> </div>
-
-                   {/* İnfo Area */}
-                   <div className='w-full text-[11.4px]  items-center flex flex-col h-1/2   '>
-                      <p className='text-[#3c455b] font-bold'>Havale</p>
-                      <p className='text-[#435061]'>Anında</p>
-                      <p className='text-[#435061]'>TRY 100.00 - </p>
-                      <p className='text-[#435061]'>50,000,000,000</p>
-                   </div>
-
-                 </div>
-
-                  {/* Payment Item 12 - Not Favorite */}
-                  <div className='w-[calc(33.333%-0.5rem)] md:w-[calc(20%-0.6rem)] h-[160px] cursor-pointer   rounded-sm  bg-[#F4F7FA] relative'>
-                   
-                   {/* Logo Area */}
-                   <div className='w-full h-1/2   flex items-center justify-center'> <Image src={payment12} className='w-[95px] h-auto' alt='logo'  /> </div>
-
-                   {/* İnfo Area */}
-                   <div className='w-full text-[11.4px]  items-center flex flex-col h-1/2   '>
-                      <p className='text-[#3c455b] font-bold'>Havale</p>
-                      <p className='text-[#435061]'>Anında</p>
-                      <p className='text-[#435061]'>TRY 100.00 - </p>
-                      <p className='text-[#435061]'>50,000,000,000</p>
-                   </div>
-
-                 </div>
-
-                  {/* Payment Item 13 - Not Favorite */}
-                  <div className='w-[calc(33.333%-0.5rem)] md:w-[calc(20%-0.6rem)] h-[160px] cursor-pointer   rounded-sm  bg-[#F4F7FA] relative'>
-                   
-                   {/* Logo Area */}
-                   <div className='w-full h-1/2   flex items-center justify-center'> <Image src={payment13} className='w-[95px] h-auto' alt='logo'  /> </div>
-
-                   {/* İnfo Area */}
-                   <div className='w-full text-[11.4px]  items-center flex flex-col h-1/2   '>
-                      <p className='text-[#3c455b] font-bold'>Havale</p>
-                      <p className='text-[#435061]'>Anında</p>
-                      <p className='text-[#435061]'>TRY 100.00 - </p>
-                      <p className='text-[#435061]'>50,000,000,000</p>
-                   </div>
-
-                 </div>
-
-                  {/* Payment Item 14 - Not Favorite */}
-                  <div className='w-[calc(33.333%-0.5rem)] md:w-[calc(20%-0.6rem)] h-[160px] cursor-pointer   rounded-sm  bg-[#F4F7FA] relative'>
-                   
-                   {/* Logo Area */}
-                   <div className='w-full h-1/2   flex items-center justify-center'> <Image src={payment14} className='w-[95px] h-auto' alt='logo'  /> </div>
-
-                   {/* İnfo Area */}
-                   <div className='w-full text-[11.4px]  items-center flex flex-col h-1/2   '>
-                      <p className='text-[#3c455b] font-bold'>Havale</p>
-                      <p className='text-[#435061]'>Anında</p>
-                      <p className='text-[#435061]'>TRY 100.00 - </p>
-                      <p className='text-[#435061]'>50,000,000,000</p>
-                   </div>
-
-                 </div>
-
-                  {/* Payment Item 15 - Not Favorite */}
-                  <div className='w-[calc(33.333%-0.5rem)] md:w-[calc(20%-0.6rem)] h-[160px] cursor-pointer   rounded-sm  bg-[#F4F7FA] relative'>
-                   
-                   {/* Logo Area */}
-                   <div className='w-full h-1/2   flex items-center justify-center'> <Image src={payment15} className='w-[95px] h-auto' alt='logo'  /> </div>
-
-                   {/* İnfo Area */}
-                   <div className='w-full text-[11.4px]  items-center flex flex-col h-1/2   '>
-                      <p className='text-[#3c455b] font-bold'>Kredi Kartı</p>
-                      <p className='text-[#435061]'>Anında</p>
-                      <p className='text-[#435061]'>TRY 100.00 - </p>
-                      <p className='text-[#435061]'>50,000,000,000</p>
-                   </div>
-
-                 </div>
-
-                  {/* Payment Item 16 - Not Favorite */}
-                  <div className='w-[calc(33.333%-0.5rem)] md:w-[calc(20%-0.6rem)] h-[160px] cursor-pointer   rounded-sm  bg-[#F4F7FA] relative'>
-                   
-                   {/* Logo Area */}
-                   <div className='w-full h-1/2   flex items-center justify-center'> <Image src={payment16} className='w-[95px] h-auto' alt='logo'  /> </div>
-
-                   {/* İnfo Area */}
-                   <div className='w-full text-[11.4px]  items-center flex flex-col h-1/2   '>
-                      <p className='text-[#3c455b] font-bold'>Havale</p>
-                      <p className='text-[#435061]'>Anında</p>
-                      <p className='text-[#435061]'>TRY 1000.00 - </p>
-                      <p className='text-[#435061]'>50,000,000,000</p>
-                   </div>
-
-                 </div>
+                 )}
                  
                 </div>
-               
+              
 
              </div>
 

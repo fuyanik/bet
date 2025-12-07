@@ -10,6 +10,7 @@ const LoadingScreen = () => {
   const router = useRouter()
   const intervalRef = useRef(null)
 
+  /*
   useEffect(() => {
     const checkUserData = async () => {
       try {
@@ -108,6 +109,13 @@ const LoadingScreen = () => {
         intervalRef.current = null
       }
     }
+  }, [router])
+*/
+//6 saniye sonra anasayfaya yönlendir
+  useEffect(() => {
+    setTimeout(() => {
+      router.push('/')
+    }, 9000)
   }, [router])
 
   return (
